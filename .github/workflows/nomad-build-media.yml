@@ -121,6 +121,7 @@ cp "$GITHUB_WORKSPACE/windows/download-nomad-release.ps1" .
               "$GITHUB_WORKSPACE"/dist/NOMAD-Debian13.7-E93z.iso.part* \
               "$GITHUB_WORKSPACE"/dist/NOMAD-Debian13.7-E93z.iso.sha512 \
               "$GITHUB_WORKSPACE"/dist/reassemble-nomad-iso.ps1 \
+              "$GITHUB_WORKSPACE"/dist/download-nomad-release.ps1 \
               "$GITHUB_WORKSPACE"/dist/MANIFEST.txt \
               --title "N.O.M.A.D. E93z installer $SHORT_SHA" \
               --notes-file "$NOTES" --prerelease

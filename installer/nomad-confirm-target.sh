@@ -122,11 +122,19 @@ done
 # A repeated partman callback must re-use the already approved device, not ask again.
 APPROVAL_FILE="$TMP_ROOT/nomad-target-approved"
 if [ -r "$APPROVAL_FILE" ]; then
-    APPROVED=$(sed -n '1p' "$APPROVAL_FILE")
-    [ "$APPROVED" = "$TARGET" ] || {
-        echo "STOP: the detected disk changed after approval. No changes made." >&2
+    APPROVED_TARGET=$(sed -n '1p' "$APPROVAL_FILE")
+    APPROVED_VENDOR=$(sed -n '2p' "$APPROVAL_FILE")
+    APPROVED_MODEL=$(sed -n '3p' "$APPROVAL_FILE")
+    APPROVED_SERIAL=$(sed -n '4p' "$APPROVAL_FILE")
+    APPROVED_BYTES=$(sed -n '5p' "$APPROVAL_FILE")
+    if [ "$APPROVED_TARGET" != "$TARGET" ] ||
+       [ "$APPROVED_VENDOR" != "$VENDOR" ] ||
+       [ "$APPROVED_MODEL" != "$MODEL" ] ||
+       [ "$APPROVED_SERIAL" != "$SERIAL" ] ||
+       [ "$APPROVED_BYTES" != "$BYTES" ]; then
+        echo "STOP: the approved disk identity changed. No changes made." >&2
         exit 22
-    }
+    fi
     command -v debconf-set >/dev/null 2>&1 || exit 23
     debconf-set partman-auto/disk "$TARGET"
     debconf-set grub-installer/bootdev "$TARGET"
@@ -152,7 +160,7 @@ exec 3<> "$TTY" || {
 
 printf '\n' >&3
 printf '========== N.O.M.A.D. INSTALL APPROVAL ==========\n' >&3
-printf 'Computer: Lenovo ThinkCentre E93z (reference profile)\n' >&3
+printf 'Computer: %s %s %s\n' "$DMI_VENDOR" "$DMI_PRODUCT" "$DMI_VERSION" >&3
 printf 'Target device: %s\n' "$TARGET" >&3
 printf 'Drive: %s %s\n' "$VENDOR" "$MODEL" >&3
 printf 'Serial: %s\n' "$SERIAL" >&3
@@ -187,6 +195,13 @@ debconf-set grub-installer/bootdev "$TARGET"
     echo "Approved phrase: ERASE AND INSTALL NOMAD"
     date -Is 2>/dev/null || date
 } > /var/log/nomad-target-approval.txt
-printf '%s\n' "$TARGET" > "$APPROVAL_FILE"
+{
+    printf '%s\n' "$TARGET"
+    printf '%s\n' "$VENDOR"
+    printf '%s\n' "$MODEL"
+    printf '%s\n' "$SERIAL"
+    printf '%s\n' "$BYTES"
+} > "$APPROVAL_FILE.tmp"
+mv "$APPROVAL_FILE.tmp" "$APPROVAL_FILE"
 printf '\nApproval accepted. Debian Installer may now partition the named drive.\n' >&3
 exit 0

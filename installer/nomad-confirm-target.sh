@@ -107,6 +107,17 @@ fi
 
 IFS='|' read -r TARGET VENDOR MODEL SERIAL BYTES < "$CANDIDATE_FILE"
 GIB=$(awk -v b="$BYTES" 'BEGIN {printf "%.1f GiB", b/1073741824}')
+DISK_NAME=${TARGET#/dev/}
+PARTITION_SUMMARY=""
+for PART in "$SYSFS_ROOT/block/$DISK_NAME/"*; do
+    [ -r "$PART/partition" ] || continue
+    PART_NAME=${PART##*/}
+    PART_SECTORS=$(cat "$PART/size" 2>/dev/null || echo 0)
+    case "$PART_SECTORS" in ''|*[!0-9]*) PART_SECTORS=0 ;; esac
+    PART_GIB=$(awk -v s="$PART_SECTORS" 'BEGIN {printf "%.1f GiB", (s*512)/1073741824}')
+    PARTITION_SUMMARY="$PARTITION_SUMMARY $PART_NAME ($PART_GIB);"
+done
+[ -n "$PARTITION_SUMMARY" ] || PARTITION_SUMMARY=" none detected"
 
 # A repeated partman callback must re-use the already approved device, not ask again.
 APPROVAL_FILE="$TMP_ROOT/nomad-target-approved"

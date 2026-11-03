@@ -75,4 +75,23 @@ printf '%s\n' "Dell Inc." > "$SYS/class/dmi/id/sys_vendor"
 if NOMAD_TMP_ROOT="$TMP" NOMAD_SYSFS_ROOT="$SYS" NOMAD_PROC_MOUNTS="$MOUNTS" NOMAD_TEST_DISKS="/dev/sda" NOMAD_TEST_MODE=1 sh "$ROOT/installer/nomad-confirm-target.sh" >"$TMP/wrong-system.out" 2>&1; then RC=0; else RC=$?; fi
 [[ "$RC" -eq 19 ]]
 grep -q "restricted to Lenovo ThinkCentre E93z" "$TMP/wrong-system.out"
+
+# A second partman callback must match the complete approved drive identity.
+printf '%s\n' "LENOVO" > "$SYS/class/dmi/id/sys_vendor"
+mkdir -p "$TMP/bin"
+cat > "$TMP/bin/debconf-set" <<'EOF'
+#!/bin/sh
+printf '%s\n' "$*" >> "$NOMAD_DEBCONF_LOG"
+EOF
+chmod +x "$TMP/bin/debconf-set"
+printf '%s\n' "/dev/sda" "TESTVENDOR" "E93Z TEST SSD" "SERIAL-ABC" "256000000000" > "$TMP/nomad-target-approved"
+if NOMAD_TMP_ROOT="$TMP" NOMAD_SYSFS_ROOT="$SYS" NOMAD_PROC_MOUNTS="$MOUNTS" NOMAD_DEBCONF_LOG="$TMP/debconf.log" PATH="$TMP/bin:$PATH" sh "$ROOT/installer/nomad-confirm-target.sh"; then RC=0; else RC=$?; fi
+[[ "$RC" -eq 0 ]]
+grep -q 'partman-auto/disk /dev/sda' "$TMP/debconf.log"
+grep -q 'grub-installer/bootdev /dev/sda' "$TMP/debconf.log"
+
+printf '%s\n' "SERIAL-CHANGED" > "$SYS/devices/pci0/ata0/sda/serial"
+if NOMAD_TMP_ROOT="$TMP" NOMAD_SYSFS_ROOT="$SYS" NOMAD_PROC_MOUNTS="$MOUNTS" NOMAD_DEBCONF_LOG="$TMP/debconf.log" PATH="$TMP/bin:$PATH" sh "$ROOT/installer/nomad-confirm-target.sh" >"$TMP/identity-mismatch.out" 2>&1; then RC=0; else RC=$?; fi
+[[ "$RC" -eq 22 ]]
+grep -q 'approved disk identity changed' "$TMP/identity-mismatch.out"
 echo "N.O.M.A.D. installer self-test passed."

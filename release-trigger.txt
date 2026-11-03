@@ -7,3 +7,5 @@ Build updated E93z ISO with the latest offline setup, full approval screen, file
 Build E93z test candidate after late-install, sudo, and first-boot service validation.
 
 Build final E93z candidate including the sysfs PCI and USB audit fallback.
+
+Build final E93z candidate from the CI-green revision with resumable downloader and validated offline installer.

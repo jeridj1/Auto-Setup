@@ -160,13 +160,14 @@ test -x "$TARGET_ROOT/usr/local/sbin/nomad-firstboot-password"
 test -L "$TARGET_ROOT/usr/local/bin/nomad-audit"
 test -L "$TARGET_ROOT/usr/local/bin/nomad-propose"
 test -f "$TARGET_ROOT/etc/systemd/system/nomad-firstboot-password.service"
+! grep -Eq '^Restart=' "$TARGET_ROOT/etc/systemd/system/nomad-firstboot-password.service"
 grep -q 'Suites: trixie trixie-updates' "$TARGET_ROOT/etc/apt/sources.list.d/debian.sources"
 grep -q 'Suites: trixie-security' "$TARGET_ROOT/etc/apt/sources.list.d/debian.sources"
 grep -q 'Installed configuration:' "$TARGET_ROOT/root/NOMAD_INSTALL_REPORT.txt"
 grep -q 'usermod -aG sudo nomad' "$TMP/late.log"
 grep -q 'systemctl enable nomad-firstboot-password.service' "$TMP/late.log"
 if command -v systemd-analyze >/dev/null 2>&1; then
-  systemd-analyze verify "$TARGET_ROOT/etc/systemd/system/nomad-firstboot-password.service"
+  systemd-analyze verify --root="$TARGET_ROOT" /etc/systemd/system/nomad-firstboot-password.service
 fi
 
 echo "N.O.M.A.D. installer self-test passed."

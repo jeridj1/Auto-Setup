@@ -16,23 +16,24 @@ The current E93z installer is the first deployment tool, **not yet the complete 
 
 - Debian GNU/Linux 13.7 amd64, built from the official DVD-1 installer image.
 - XFCE desktop, intended to run reasonably on the E93z's 4 GB RAM.
-- Offline base installation from the DVD image; no network mirror is required during installation.
+- Offline base installation from the DVD image. Network configuration and NTP are disabled inside the installer, so it does not wait for DHCP or require internet access.
 - Debian firmware loading enabled. The included firmware still needs to be checked against the E93z's actual Wi-Fi chipset.
 - BIOS/legacy and UEFI boot-menu entries are retained from the official Debian image.
 - Installer is deliberately locked to Lenovo ThinkCentre E93z DMI identity.
 - Disk selection requires exactly one eligible internal, non-removable, non-USB disk of at least 64 GiB. Multiple candidates, a mounted candidate, or no candidate cause a hard stop.
-- Before partitioning, the installer displays the selected disk's device path, vendor, model, serial when available, capacity, and detected partitions.
+- Before partitioning, the installer displays the selected disk's device path, vendor, model, serial when available, capacity, existing partitions and filesystems, plus the detected UEFI/legacy boot mode.
+- The approval screen also states the rough 30-60 minute installation estimate, lack of backup/preservation, unknown Wi-Fi chipset, wired-Ethernet fallback, and the one first-boot password action.
 - Destructive work requires the exact phrase `ERASE AND INSTALL NOMAD`. The approval authorizes deleting the target drive's partition table and all its partitions. This is not a secure data-wipe operation.
 - The installed `nomad` account starts locked; first boot prompts once to set its password.
 - Official Debian repositories are configured for updates after installation when networking is available.
 
-The installer does not silently choose between multiple disks. Do not connect additional internal-style storage devices during installation. External USB drives are excluded from target selection.
+The installer does not silently choose between multiple disks. Do not connect additional internal-style storage devices during installation. External USB drives are excluded from target selection. The screen's 30-60 minute figure is only an estimate.
 
 ## Getting the installer
 
 The GitHub Actions workflow downloads Debian's official DVD-1 image, verifies Debian's signed SHA-512 checksum list, remasters the image with the N.O.M.A.D. boot entry and installer files, then publishes the finished ISO as a GitHub Release.
 
-The ISO is split into pieces smaller than GitHub's per-asset upload limit. Download every `NOMAD-Debian13.7-E93z.iso.partNN` segment, the matching `.sha512` file, and `reassemble-nomad-iso.ps1` into one folder. In PowerShell, from that folder:
+The full ISO is not uploaded as one GitHub asset because it exceeds GitHub's 2 GiB per-asset limit. It is split into three pieces smaller than that limit. Download every `NOMAD-Debian13.7-E93z.iso.partNN` segment, the matching `.sha512` file, and `reassemble-nomad-iso.ps1` into one folder. In PowerShell, from that folder:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass
@@ -63,7 +64,7 @@ Run:
 bash tests/nomad-selftest.sh
 ```
 
-GitHub Actions runs the automated checks on pushes and pull requests. Tests cover shell syntax, report generation and JSON validity, simulated disk discovery, USB/removable-device exclusion, ambiguous and mounted disk rejection, the E93z-only restriction, partition summary output, and idempotent BIOS/UEFI boot-menu patching.
+GitHub Actions runs the automated checks on pushes and pull requests. Tests cover shell syntax, report generation and JSON validity, simulated disk discovery, USB/removable-device exclusion, ambiguous and mounted disk rejection, the E93z-only restriction, partition and boot-mode reporting, repeated disk-identity checks, and idempotent boot-menu patching with an indented Debian-style GRUB entry. A Windows runner also tests segmented ISO reassembly and SHA-512 verification.
 
 ## What is not yet physically verified
 

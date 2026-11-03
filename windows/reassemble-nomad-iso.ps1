@@ -34,12 +34,12 @@ try {
     $Output = [System.IO.File]::Open($TempPath, [System.IO.FileMode]::CreateNew, [System.IO.FileAccess]::Write, [System.IO.FileShare]::None)
     foreach ($Part in $Parts) {
         Write-Host ("Appending {0} ({1:N0} bytes)" -f $Part.Name, $Part.Length)
-        $Input = [System.IO.File]::OpenRead($Part.FullName)
+        $SourceStream = [System.IO.File]::OpenRead($Part.FullName)
         try {
-            $Input.CopyTo($Output, 4MB)
+            $SourceStream.CopyTo($Output, 4MB)
         }
         finally {
-            $Input.Dispose()
+            $SourceStream.Dispose()
         }
     }
     $Output.Flush($true)

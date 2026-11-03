@@ -117,7 +117,7 @@ for PART in "$SYSFS_ROOT/block/$DISK_NAME/"*; do
     case "$PART_SECTORS" in ''|*[!0-9]*) PART_SECTORS=0 ;; esac
     PART_GIB=$(awk -v s="$PART_SECTORS" 'BEGIN {printf "%.1f GiB", (s*512)/1073741824}')
     PART_FS=""
-    if command -v blkid >/dev/null 2>&1; then
+    if [ "${NOMAD_SKIP_BLKID:-0}" != "1" ] && command -v blkid >/dev/null 2>&1; then
         PART_FS=$(blkid -s TYPE -o value "/dev/$PART_NAME" 2>/dev/null || true)
     fi
     [ -n "$PART_FS" ] || PART_FS="filesystem unknown"

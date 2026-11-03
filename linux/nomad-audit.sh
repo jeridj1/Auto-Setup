@@ -75,12 +75,34 @@ python3 - "$JSON" <<'PY'
 import json, os, platform, subprocess, sys
 out=sys.argv[1]
 def cmd(args):
-    try: return subprocess.check_output(args,text=True,stderr=subprocess.DEVNULL).strip()
-    except Exception: return ""
+    try:
+        return subprocess.check_output(args, text=True, stderr=subprocess.DEVNULL).strip()
+    except Exception:
+        return ""
 def rd(path):
     try:
-        with open(path) as f: return f.read().strip()
-    except Exception: return "unknown"
+        with open(path) as f:
+            return f.read().strip()
+    except Exception:
+        return "unknown"
+def sysfs_devices(base, fields, include_driver=False):
+    records=[]
+    try:
+        names=sorted(os.listdir(base))
+    except OSError:
+        return records
+    for name in names:
+        path=os.path.join(base,name)
+        if not os.path.isdir(path):
+            continue
+        record={"name":name}
+        for key, filename in fields.items():
+            record[key]=rd(os.path.join(path,filename))
+        if include_driver:
+            driver=os.path.join(path,"driver")
+            record["driver"]=os.path.basename(os.path.realpath(driver)) if os.path.islink(driver) else "unbound"
+        records.append(record)
+    return records
 try:
     block=json.loads(cmd(["lsblk","-J","-b","-o","NAME,PATH,TYPE,SIZE,MODEL,SERIAL,TRAN,RM,RO,FSTYPE,MOUNTPOINTS"]))
 except Exception:
@@ -97,14 +119,18 @@ data={
  "cpu":cmd(["lscpu"]),
  "memory":cmd(["free","-b"]),
  "pci":cmd(["lspci","-nnk"]),
- "pci_sysfs":cmd(["sh","-c","for d in /sys/bus/pci/devices/*; do [ -d \"$d\" ] || continue; printf '%s %s:%s class=%s driver=%s\n' \"$(basename \"$d\")\" \"$(cat \"$d/vendor\" 2>/dev/null)\" \"$(cat \"$d/device\" 2>/dev/null)\" \"$(cat \"$d/class\" 2>/dev/null)\" \"$(basename \"$(readlink -f \"$d/driver\" 2>/dev/null)\" 2>/dev/null || echo unbound)\"; done"]),
- "usb_sysfs":cmd(["sh","-c","for d in /sys/bus/usb/devices/*; do [ -r \"$d/idVendor\" ] || continue; printf '%s %s:%s %s %s\\n' \"$(basename \"$d\")\" \"$(cat \"$d/idVendor\")\" \"$(cat \"$d/idProduct\" 2>/dev/null)\" \"$(cat \"$d/manufacturer\" 2>/dev/null)\" \"$(cat \"$d/product\" 2>/dev/null)\"; done"]),
+ "pci_sysfs":sysfs_devices("/sys/bus/pci/devices",
+      {"vendor":"vendor","device":"device","class":"class","subsystem_vendor":"subsystem_vendor","subsystem_device":"subsystem_device"},
+      include_driver=True),
+ "usb_sysfs":sysfs_devices("/sys/bus/usb/devices",
+      {"vendor_id":"idVendor","product_id":"idProduct","manufacturer":"manufacturer","product":"product"}),
  "blockdevices":block.get("blockdevices",[]),
  "network_links":cmd(["ip","-brief","link"]),
  "network_addresses":cmd(["ip","-brief","address"]),
  "read_only":True
 }
-with open(out,"w") as f: json.dump(data,f,indent=2)
+with open(out,"w") as f:
+    json.dump(data,f,indent=2)
 PY
 fi
 

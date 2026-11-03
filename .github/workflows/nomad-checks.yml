@@ -43,9 +43,7 @@ jobs:
       - name: Test interrupted download resume and ISO reassembly
         shell: pwsh
         run: |
-          python tests/test-resumable-downloader.py \
-            "$env:GITHUB_WORKSPACE/windows/download-nomad-release.ps1" \
-            "$env:GITHUB_WORKSPACE/windows/reassemble-nomad-iso.ps1"
+          python tests/test-resumable-downloader.py "$env:GITHUB_WORKSPACE/windows/download-nomad-release.ps1" "$env:GITHUB_WORKSPACE/windows/reassemble-nomad-iso.ps1"
       - name: Test ISO segment joining and SHA-512 verification
         shell: pwsh
         run: |

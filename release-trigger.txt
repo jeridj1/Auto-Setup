@@ -1,1 +1,3 @@
 Build N.O.M.A.D. E93z ISO release using the current main branch.
+
+Build current E93z installer after GRUB boot patcher correction.

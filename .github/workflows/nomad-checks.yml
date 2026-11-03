@@ -13,3 +13,46 @@ jobs:
         uses: actions/checkout@v4
       - name: Run read-only self-test
         run: bash tests/nomad-selftest.sh
+
+  windows-reassembly:
+    runs-on: windows-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Test ISO segment joining and SHA-512 verification
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $Folder = Join-Path $env:RUNNER_TEMP "nomad-reassembly-test"
+          New-Item -ItemType Directory -Force -Path $Folder | Out-Null
+          $Base = "NOMAD-Debian13.7-E93z.iso"
+          $Original = Join-Path $Folder $Base
+          [byte[]]$Bytes = New-Object byte[] 2700123
+          for ($i = 0; $i -lt $Bytes.Length; $i++) {
+              $Bytes[$i] = [byte](($i * 31 + 17) % 256)
+          }
+          [System.IO.File]::WriteAllBytes($Original, $Bytes)
+
+          $Source = [System.IO.File]::OpenRead($Original)
+          try {
+              $Buffer = New-Object byte[] 900000
+              $Index = 0
+              while (($Read = $Source.Read($Buffer, 0, $Buffer.Length)) -gt 0) {
+                  $PartName = "{0}.part{1:D2}" -f $Base, $Index
+                  $PartPath = Join-Path $Folder $PartName
+                  $Part = [System.IO.File]::Create($PartPath)
+                  try { $Part.Write($Buffer, 0, $Read) } finally { $Part.Dispose() }
+                  $Index++
+              }
+          }
+          finally { $Source.Dispose() }
+
+          $Hash = (Get-FileHash -LiteralPath $Original -Algorithm SHA512).Hash.ToLowerInvariant()
+          Set-Content -LiteralPath (Join-Path $Folder "$Base.sha512") -Value "$Hash  $Base" -NoNewline -Encoding ascii
+
+          $Assembled = Join-Path $Folder "assembled.iso"
+          & "$env:GITHUB_WORKSPACE/windows/reassemble-nomad-iso.ps1" -Directory $Folder -OutputPath $Assembled
+          if ((Get-FileHash -LiteralPath $Assembled -Algorithm SHA512).Hash.ToLowerInvariant() -ne $Hash) {
+              throw "Reassembled ISO hash does not match the original test payload."
+          }
+          Write-Host "Windows ISO reassembly test passed."

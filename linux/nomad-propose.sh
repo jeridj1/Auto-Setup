@@ -8,7 +8,7 @@ command -v lsblk >/dev/null || { echo "lsblk is required."; exit 1; }
 
 echo
 echo "All detected disks:"
-lsblk -dpno NAME,SIZE,MODEL,SERIAL,TRAN,RM,RO,TYPE | awk '$7=="disk" || $8=="disk" {print}'
+lsblk -dpno NAME,SIZE,MODEL,SERIAL,TRAN,RM,RO,TYPE
 
 mapfile -t CANDIDATES < <(
   lsblk -dpno PATH,TRAN,RM,TYPE |

@@ -40,7 +40,7 @@ read_sys() { cat "$1" 2>/dev/null || printf 'unknown'; }
       CLASS=$(read_sys "$DEV/class")
       DRIVER="unbound"
       [ -L "$DEV/driver" ] && DRIVER=$(basename "$(readlink -f "$DEV/driver")")
-      printf '%s vendor=%s device=%s class=%s driver=%s\\n' "$BDF" "$VENDOR" "$DEVICE" "$CLASS" "$DRIVER"
+      printf '%s vendor=%s device=%s class=%s driver=%s\n' "$BDF" "$VENDOR" "$DEVICE" "$CLASS" "$DRIVER"
     done
   fi
   echo
@@ -60,7 +60,7 @@ read_sys() { cat "$1" 2>/dev/null || printf 'unknown'; }
     echo "lsusb unavailable; showing USB IDs from sysfs:"
     for DEV in /sys/bus/usb/devices/*; do
       [ -r "$DEV/idVendor" ] || continue
-      printf '%s vendor=%s product=%s manufacturer=%s name=%s\\n' \
+      printf '%s vendor=%s product=%s manufacturer=%s name=%s\n' \
         "${DEV##*/}" "$(read_sys "$DEV/idVendor")" "$(read_sys "$DEV/idProduct")" \
         "$(read_sys "$DEV/manufacturer")" "$(read_sys "$DEV/product")"
     done
@@ -97,7 +97,7 @@ data={
  "cpu":cmd(["lscpu"]),
  "memory":cmd(["free","-b"]),
  "pci":cmd(["lspci","-nnk"]),
- "pci_sysfs":cmd(["sh","-c","for d in /sys/bus/pci/devices/*; do [ -d \"$d\" ] || continue; printf '%s %s:%s class=%s driver=%s\\n' \"$(basename \"$d\")\" \"$(cat \"$d/vendor\" 2>/dev/null)\" \"$(cat \"$d/device\" 2>/dev/null)\" \"$(cat \"$d/class\" 2>/dev/null)\" \"$(basename \"$(readlink -f \"$d/driver\" 2>/dev/null)\" 2>/dev/null || echo unbound)\"; done"]),
+ "pci_sysfs":cmd(["sh","-c","for d in /sys/bus/pci/devices/*; do [ -d \"$d\" ] || continue; printf '%s %s:%s class=%s driver=%s\n' \"$(basename \"$d\")\" \"$(cat \"$d/vendor\" 2>/dev/null)\" \"$(cat \"$d/device\" 2>/dev/null)\" \"$(cat \"$d/class\" 2>/dev/null)\" \"$(basename \"$(readlink -f \"$d/driver\" 2>/dev/null)\" 2>/dev/null || echo unbound)\"; done"]),
  "usb_sysfs":cmd(["sh","-c","for d in /sys/bus/usb/devices/*; do [ -r \"$d/idVendor\" ] || continue; printf '%s %s:%s %s %s\\n' \"$(basename \"$d\")\" \"$(cat \"$d/idVendor\")\" \"$(cat \"$d/idProduct\" 2>/dev/null)\" \"$(cat \"$d/manufacturer\" 2>/dev/null)\" \"$(cat \"$d/product\" 2>/dev/null)\"; done"]),
  "blockdevices":block.get("blockdevices",[]),
  "network_links":cmd(["ip","-brief","link"]),

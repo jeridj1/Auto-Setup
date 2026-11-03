@@ -5,6 +5,10 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 SYS="$TMP/sys"
 MOUNTS="$TMP/mounts"
+mkdir -p "$SYS/class/dmi/id"
+printf "LENOVO\\n" > "$SYS/class/dmi/id/sys_vendor"
+printf "ThinkCentre E93z\\n" > "$SYS/class/dmi/id/product_name"
+printf "0007US\\n" > "$SYS/class/dmi/id/product_version"
 mkdir -p "$SYS/block" "$SYS/devices/pci0/ata0/sda" "$SYS/devices/pci0/ata1/sdd" "$SYS/devices/pci0/usb1/host1/sdb" "$SYS/devices/pci0/usb2/host2/sdc"
 : > "$MOUNTS"
 

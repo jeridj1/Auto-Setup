@@ -113,5 +113,5 @@ jobs:
           else
             gh release create "$TAG" "$GITHUB_WORKSPACE"/dist/* \
               --title "N.O.M.A.D. E93z installer $SHORT_SHA" \
-              --notes-file "$NOTES" \\\n              --prerelease
+              --notes-file "$NOTES" --prerelease
           fi

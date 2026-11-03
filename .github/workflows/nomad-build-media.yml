@@ -39,7 +39,7 @@ jobs:
             curl --fail --location --retry 8 --retry-all-errors --connect-timeout 30 --continue-at - \
               "$BASE/$FILE" -o "$FILE"
           done
-          gpgv --keyring /usr/share/keyrings/debian-role-keys.gpg --verify SHA512SUMS.sign SHA512SUMS
+          gpgv --keyring /usr/share/keyrings/debian-role-keys.gpg SHA512SUMS.sign SHA512SUMS
           grep -E '^[0-9a-fA-F]{128}[[:space:]]+debian-13\.7\.0-amd64-DVD-1\.iso$' SHA512SUMS > expected.sha512
           test -s expected.sha512
           sha512sum --check expected.sha512

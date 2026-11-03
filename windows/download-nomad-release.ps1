@@ -163,8 +163,26 @@ try {
     Write-Host "All release segments are present. Reassembling and verifying SHA-512..."
     $Reassembler = Join-Path $Directory "reassemble-nomad-iso.ps1"
     $OutputIso = Join-Path $Directory $BaseName
-    & $Reassembler -Directory $Directory -OutputPath $OutputIso
-    if (-not (Test-Path -LiteralPath $OutputIso)) { throw "Reassembler did not produce the ISO." }
+    try {
+        & $Reassembler -Directory $Directory -OutputPath $OutputIso
+        if (-not (Test-Path -LiteralPath $OutputIso)) { throw "Reassembler did not produce the ISO." }
+    }
+    catch {
+        $Reason = $_.Exception.Message
+        # A same-length corrupt segment would otherwise be trusted on every retry.
+        # Discard all segments on a final SHA-512 failure so the next run fetches clean copies.
+        foreach ($PartAsset in $PartAssets) {
+            $PartPath = Join-Path $Directory $PartAsset.name
+            if (Test-Path -LiteralPath $PartPath) {
+                Remove-Item -LiteralPath $PartPath -Force
+            }
+        }
+        $PartialIso = "$OutputIso.partial"
+        if (Test-Path -LiteralPath $PartialIso) {
+            Remove-Item -LiteralPath $PartialIso -Force
+        }
+        throw "ISO assembly or SHA-512 verification failed. The downloaded ISO segments have been discarded; run the downloader again to fetch clean copies. Original error: $Reason"
+    }
 
     Write-Host ""
     Write-Host "N.O.M.A.D. installer is ready:"

@@ -28,10 +28,10 @@ def patch_grub(text: str) -> str:
     # Preserve all pre-menu setup (including Debian's media-root search and
     # conditional timeout logic). Insert our entry at global scope immediately
     # before the first existing menu item, then force a visible non-expiring menu.
-    match = re.search(r"(?m)^(?=(?:menuentry|submenu)\\s+)", text)
+    match = re.search(r"(?m)^(?=(?:menuentry|submenu)\s+)", text)
     if not match:
         raise ValueError("No top-level GRUB menuentry/submenu found; refusing to guess an insertion point.")
-    setup = "set timeout_style=menu\\nset timeout=-1\\n"
+    setup = "set timeout_style=menu\nset timeout=-1\n"
     return text[:match.start()] + setup + GRUB_ENTRY + text[match.start():]
 
 def patch_isolinux(text: str) -> str:

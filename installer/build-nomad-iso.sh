@@ -78,7 +78,7 @@ xorriso -indev "$OUT" -find / -name preseed.cfg -exec echo >"$WORK/output-files.
 grep -q 'preseed.cfg' "$WORK/output-files.txt"
 xorriso -indev "$OUT" -find / -name nomad-confirm-target.sh -exec echo >>"$WORK/output-files.txt" 2>&1
 grep -q 'nomad-confirm-target.sh' "$WORK/output-files.txt"
-sha512sum "$OUT" > "$OUT.sha512"
+sha512sum "$OUT" | awk -v name="$(basename "$OUT")" '{print $1 "  " name}' > "$OUT.sha512"
 
 echo
 echo "N.O.M.A.D. installer ISO created:"

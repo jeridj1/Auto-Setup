@@ -7,6 +7,7 @@ MEDIA="${NOMAD_MEDIA_ROOT:-/cdrom}"
     exit 30
 }
 TARGET_ROOT="${NOMAD_TARGET_ROOT:-/target}"
+IN_TARGET="${NOMAD_IN_TARGET:-in-target}"
 [ -d "$TARGET_ROOT/etc" ] || exit 31
 
 # Network configuration is skipped in the installer to guarantee a fully offline
@@ -66,6 +67,6 @@ Installed configuration:
 EOF
 
 # Add sudo access after the sudo package has created its group.
-in-target usermod -aG sudo nomad
-in-target systemctl enable nomad-firstboot-password.service
+"$IN_TARGET" usermod -aG sudo nomad
+"$IN_TARGET" systemctl enable nomad-firstboot-password.service
 echo "N.O.M.A.D. late-install setup completed."

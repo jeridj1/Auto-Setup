@@ -165,8 +165,10 @@ printf 'Target device: %s\n' "$TARGET" >&3
 printf 'Drive: %s %s\n' "$VENDOR" "$MODEL" >&3
 printf 'Serial: %s\n' "$SERIAL" >&3
 printf 'Capacity: %s\n' "$GIB" >&3
+printf 'Existing partitions: %s\n' "$PARTITION_SUMMARY" >&3
 printf 'Connection: internal, non-removable, non-USB\n' >&3
-printf '\nTHIS WILL ERASE THE ENTIRE TARGET DRIVE, ALL PARTITIONS, AND ALL DATA.\n' >&3
+printf '\nTHIS WILL DELETE THE EXISTING PARTITION TABLE AND ALL PARTITIONS ON THIS DRIVE.\n' >&3
+printf 'All data on the target drive will be lost. This is not a secure data-wipe operation.\n' >&3
 printf 'It will install Debian 13 with the XFCE desktop.\n' >&3
 printf 'No other detected internal disk will be touched.\n' >&3
 printf '\nAfter installation, first boot will ask you to create the nomad account password once.\n' >&3

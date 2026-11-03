@@ -7,4 +7,4 @@ while ! passwd nomad; do
     echo "Password setup did not complete. Please try again."
 done
 mkdir -p /var/lib/nomad
-date -Is 2>/dev/null || date > /var/lib/nomad/initial-password-set
+{ date -Is 2>/dev/null || date; } > /var/lib/nomad/initial-password-set

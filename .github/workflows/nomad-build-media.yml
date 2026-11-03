@@ -88,6 +88,8 @@ jobs:
           TAG="nomad-e93z-$SHORT_SHA"
           NOTES="$RUNNER_TEMP/nomad-release-notes.md"
           cat > "$NOTES" <<EOF
+          **TEST CANDIDATE.** This build has automated safety and reassembly tests, but it has not yet completed a full installation on the physical E93z.
+
           N.O.M.A.D. E93z installer built from commit $GITHUB_SHA.
 
           Download **all** ISO segment files into one folder, along with the SHA-512 file and
@@ -111,5 +113,5 @@ jobs:
           else
             gh release create "$TAG" "$GITHUB_WORKSPACE"/dist/* \
               --title "N.O.M.A.D. E93z installer $SHORT_SHA" \
-              --notes-file "$NOTES"
+              --notes-file "$NOTES" \\\n              --prerelease
           fi

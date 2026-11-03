@@ -8,6 +8,7 @@ trap 'rm -rf "$TMP"' EXIT
 
 SYS="$TMP/sys"
 MOUNTS="$TMP/mounts"
+SWAPS="$TMP/swaps"
 mkdir -p "$SYS/class/dmi/id" "$SYS/block"
 printf '%s\n' "LENOVO" > "$SYS/class/dmi/id/sys_vendor"
 printf '%s\n' "ThinkCentre E93z" > "$SYS/class/dmi/id/product_name"
@@ -15,6 +16,7 @@ printf '%s\n' "0007US" > "$SYS/class/dmi/id/product_version"
 mkdir -p "$SYS/devices/pci0/ata0/sda" "$SYS/devices/pci0/ata1/sdd" \
   "$SYS/devices/pci0/usb1/host1/sdb" "$SYS/devices/pci0/usb2/host2/sdc"
 : > "$MOUNTS"
+printf '%s\n' "Filename Type Size Used Priority" > "$SWAPS"
 
 make_disk() {
   local name="$1" removable="$2" sectors="$3" path="$4" model="$5" serial="$6"
@@ -36,7 +38,7 @@ make_disk sdb 1 500000000 pci0/usb1/host1/sdb "USB INSTALLER" "USB-001"
 make_disk sdc 0 500000000 pci0/usb2/host2/sdc "USB HDD" "USB-002"
 
 # Exactly one internal drive should be detected; removable and USB drives are excluded.
-OUT="$(NOMAD_SKIP_BLKID=1 NOMAD_TMP_ROOT="$TMP" NOMAD_SYSFS_ROOT="$SYS" NOMAD_PROC_MOUNTS="$MOUNTS" \
+OUT="$(NOMAD_SKIP_BLKID=1 NOMAD_TMP_ROOT="$TMP" NOMAD_SYSFS_ROOT="$SYS" NOMAD_PROC_MOUNTS="$MOUNTS" NOMAD_PROC_SWAPS="$SWAPS" \
   NOMAD_TEST_DISKS="/dev/sda /dev/sdb /dev/sdc" NOMAD_TEST_MODE=1 \
   sh "$ROOT/installer/nomad-confirm-target.sh")"
 grep -q '/dev/sda' <<<"$OUT"
@@ -51,7 +53,7 @@ grep -q 'Legacy BIOS' <<<"$OUT"
 
 # Two eligible internal disks must stop rather than guess.
 make_disk sdd 0 500000000 pci0/ata1/sdd "SECOND INTERNAL" "SERIAL-SECOND"
-if NOMAD_TMP_ROOT="$TMP" NOMAD_SYSFS_ROOT="$SYS" NOMAD_PROC_MOUNTS="$MOUNTS" \
+if NOMAD_TMP_ROOT="$TMP" NOMAD_SYSFS_ROOT="$SYS" NOMAD_PROC_MOUNTS="$MOUNTS" NOMAD_PROC_SWAPS="$SWAPS" \
   NOMAD_TEST_DISKS="/dev/sda /dev/sdd" NOMAD_TEST_MODE=1 \
   sh "$ROOT/installer/nomad-confirm-target.sh" >"$TMP/multiple.out" 2>&1; then RC=0; else RC=$?; fi
 [[ "$RC" -eq 21 ]]
@@ -60,15 +62,34 @@ grep -q 'found 2 eligible internal disks' "$TMP/multiple.out"
 # A read-only internal disk is not an eligible installation target.
 make_disk sde 0 500000000 pci0/ata1/sdd "READ ONLY DISK" "SERIAL-RO"
 printf '%s\n' "1" > "$SYS/block/sde/ro"
-if NOMAD_TMP_ROOT="$TMP" NOMAD_SYSFS_ROOT="$SYS" NOMAD_PROC_MOUNTS="$MOUNTS" \
+if NOMAD_TMP_ROOT="$TMP" NOMAD_SYSFS_ROOT="$SYS" NOMAD_PROC_MOUNTS="$MOUNTS" NOMAD_PROC_SWAPS="$SWAPS" \
   NOMAD_TEST_DISKS="/dev/sde" NOMAD_TEST_MODE=1 \
   sh "$ROOT/installer/nomad-confirm-target.sh" >"$TMP/readonly.out" 2>&1; then RC=0; else RC=$?; fi
 [[ "$RC" -eq 21 ]]
 grep -q 'found 0 eligible internal disks' "$TMP/readonly.out"
 
+# An active swap partition makes its parent disk ineligible.
+printf '%s\n' "/dev/sda1 partition 1024 0 -2" >> "$SWAPS"
+if NOMAD_TMP_ROOT="$TMP" NOMAD_SYSFS_ROOT="$SYS" NOMAD_PROC_MOUNTS="$MOUNTS" NOMAD_PROC_SWAPS="$SWAPS" \
+  NOMAD_TEST_DISKS="/dev/sda" NOMAD_TEST_MODE=1 \
+  sh "$ROOT/installer/nomad-confirm-target.sh" >"$TMP/swap.out" 2>&1; then RC=0; else RC=$?; fi
+[[ "$RC" -eq 21 ]]
+grep -q 'found 0 eligible internal disks' "$TMP/swap.out"
+printf '%s\n' "Filename Type Size Used Priority" > "$SWAPS"
+
+# A disk held by device-mapper or RAID is not an installation candidate.
+make_disk sdf 0 500000000 pci0/ata1/sdd "HELD DISK" "SERIAL-HELD"
+mkdir -p "$SYS/block/sdf/holders"
+: > "$SYS/block/sdf/holders/dm-0"
+if NOMAD_TMP_ROOT="$TMP" NOMAD_SYSFS_ROOT="$SYS" NOMAD_PROC_MOUNTS="$MOUNTS" NOMAD_PROC_SWAPS="$SWAPS" \
+  NOMAD_TEST_DISKS="/dev/sdf" NOMAD_TEST_MODE=1 \
+  sh "$ROOT/installer/nomad-confirm-target.sh" >"$TMP/holders.out" 2>&1; then RC=0; else RC=$?; fi
+[[ "$RC" -eq 21 ]]
+grep -q 'found 0 eligible internal disks' "$TMP/holders.out"
+
 # Any mounted partition makes the drive ineligible.
 printf '/dev/sda1 / ext4 rw 0 0\n' > "$MOUNTS"
-if NOMAD_TMP_ROOT="$TMP" NOMAD_SYSFS_ROOT="$SYS" NOMAD_PROC_MOUNTS="$MOUNTS" \
+if NOMAD_TMP_ROOT="$TMP" NOMAD_SYSFS_ROOT="$SYS" NOMAD_PROC_MOUNTS="$MOUNTS" NOMAD_PROC_SWAPS="$SWAPS" \
   NOMAD_TEST_DISKS="/dev/sda" NOMAD_TEST_MODE=1 \
   sh "$ROOT/installer/nomad-confirm-target.sh" >"$TMP/mounted.out" 2>&1; then RC=0; else RC=$?; fi
 [[ "$RC" -eq 21 ]]
@@ -115,7 +136,7 @@ grep -q 'This is not a secure data-wipe operation' "$ROOT/installer/nomad-confir
 
 # Installer must refuse a different manufacturer.
 printf '%s\n' "Dell Inc." > "$SYS/class/dmi/id/sys_vendor"
-if NOMAD_TMP_ROOT="$TMP" NOMAD_SYSFS_ROOT="$SYS" NOMAD_PROC_MOUNTS="$MOUNTS" \
+if NOMAD_TMP_ROOT="$TMP" NOMAD_SYSFS_ROOT="$SYS" NOMAD_PROC_MOUNTS="$MOUNTS" NOMAD_PROC_SWAPS="$SWAPS" \
   NOMAD_TEST_DISKS="/dev/sda" NOMAD_TEST_MODE=1 \
   sh "$ROOT/installer/nomad-confirm-target.sh" >"$TMP/wrong-system.out" 2>&1; then RC=0; else RC=$?; fi
 [[ "$RC" -eq 19 ]]
@@ -132,7 +153,7 @@ EOF
 chmod +x "$TMP/bin/debconf-set"
 printf '%s\n' "/dev/sda" "TESTVENDOR" "E93Z TEST SSD" "SERIAL-ABC" "256000000000" > "$TMP/nomad-target-approved"
 if NOMAD_TEST_DISKS="/dev/sda" NOMAD_TMP_ROOT="$TMP" NOMAD_SYSFS_ROOT="$SYS" \
-  NOMAD_PROC_MOUNTS="$MOUNTS" NOMAD_DEBCONF_LOG="$TMP/debconf.log" \
+  NOMAD_PROC_MOUNTS="$MOUNTS" NOMAD_PROC_SWAPS="$SWAPS" NOMAD_DEBCONF_LOG="$TMP/debconf.log" \
   PATH="$TMP/bin:$PATH" sh "$ROOT/installer/nomad-confirm-target.sh"; then RC=0; else RC=$?; fi
 [[ "$RC" -eq 0 ]]
 grep -q 'partman-auto/disk /dev/sda' "$TMP/debconf.log"
@@ -141,7 +162,7 @@ grep -q 'grub-installer/bootdev /dev/sda' "$TMP/debconf.log"
 # If the serial changes after approval, the repeated callback must stop.
 printf '%s\n' "SERIAL-CHANGED" > "$SYS/devices/pci0/ata0/sda/serial"
 if NOMAD_TEST_DISKS="/dev/sda" NOMAD_TMP_ROOT="$TMP" NOMAD_SYSFS_ROOT="$SYS" \
-  NOMAD_PROC_MOUNTS="$MOUNTS" NOMAD_DEBCONF_LOG="$TMP/debconf.log" \
+  NOMAD_PROC_MOUNTS="$MOUNTS" NOMAD_PROC_SWAPS="$SWAPS" NOMAD_DEBCONF_LOG="$TMP/debconf.log" \
   PATH="$TMP/bin:$PATH" sh "$ROOT/installer/nomad-confirm-target.sh" \
   >"$TMP/identity-mismatch.out" 2>&1; then RC=0; else RC=$?; fi
 [[ "$RC" -eq 22 ]]

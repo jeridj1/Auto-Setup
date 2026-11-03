@@ -28,7 +28,7 @@ read_sys() { cat "$1" 2>/dev/null || printf 'unknown'; }
   if have free; then free -h; else cat /proc/meminfo; fi
   echo
   echo "=== PCI DEVICES ==="
-  if have lspci; then
+  if have lspci && [ "${NOMAD_FORCE_SYSFS_PCI:-0}" != "1" ]; then
     lspci -nnk || true
   else
     echo "lspci unavailable; showing raw PCI IDs and bound drivers from sysfs:"
@@ -54,7 +54,7 @@ read_sys() { cat "$1" 2>/dev/null || printf 'unknown'; }
   if have iw; then iw dev || true; fi
   echo
   echo "=== USB ==="
-  if have lsusb; then
+  if have lsusb && [ "${NOMAD_FORCE_SYSFS_USB:-0}" != "1" ]; then
     lsusb || true
   else
     echo "lsusb unavailable; showing USB IDs from sysfs:"

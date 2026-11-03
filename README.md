@@ -46,6 +46,16 @@ Set-ExecutionPolicy -Scope Process Bypass
 - One approval screen showing the exact target disk identity, capacity, serial, partitions, intended changes, expected duration, and any required human intervention.
 - After approval, unattended installation with logging, failure recovery, and a final completion report.
 
+## Developer self-test
+
+Run the non-destructive local checks with:
+
+```bash
+bash tests/nomad-selftest.sh
+```
+
+GitHub Actions runs the same checks on pushes and pull requests. The self-test validates shell syntax, runs the read-only audit into a temporary directory, and checks the JSON report when Python and `lsblk` are available.
+
 ## Important build gates
 
 This repository is **not yet a bootable installer**. Before enabling destructive installation, we must verify the exact storage device and health, Wi-Fi chipset/firmware, BIOS boot mode, package set, recovery method, and the installer in a VM and on a recoverable test disk. Do not run destructive commands from an unreviewed branch or commit.

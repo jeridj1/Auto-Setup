@@ -25,7 +25,7 @@ jobs:
       - name: Install ISO tools and Debian signing keyring
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends xorriso debian-keyring gnupg ca-certificates curl python3 coreutils
+          sudo apt-get install -y --no-install-recommends xorriso grub-common debian-keyring gnupg ca-certificates curl python3 coreutils
 
       - name: Download and authenticate the official Debian 13.7 DVD-1 image
         shell: bash

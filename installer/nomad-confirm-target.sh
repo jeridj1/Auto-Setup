@@ -7,6 +7,22 @@ set -eu
 SYSFS_ROOT="${NOMAD_SYSFS_ROOT:-/sys}"
 MOUNTS_FILE="${NOMAD_PROC_MOUNTS:-/proc/mounts}"
 TMP_ROOT="${NOMAD_TMP_ROOT:-/tmp}"
+
+# This first build is deliberately locked to the reference Lenovo E93z.
+DMI_VENDOR=$(cat "$SYSFS_ROOT/class/dmi/id/sys_vendor" 2>/dev/null | tr '[:upper:]' '[:lower:]' || true)
+DMI_PRODUCT=$(cat "$SYSFS_ROOT/class/dmi/id/product_name" 2>/dev/null || true)
+DMI_VERSION=$(cat "$SYSFS_ROOT/class/dmi/id/product_version" 2>/dev/null || true)
+DMI_LABEL=$(printf '%s %s' "$DMI_PRODUCT" "$DMI_VERSION" | tr '[:upper:]' '[:lower:]')
+case "$DMI_VENDOR" in *lenovo*) ;; *)
+    echo "STOP: this installer build is restricted to Lenovo ThinkCentre E93z." >&2
+    echo "Detected manufacturer: ${DMI_VENDOR:-unknown}" >&2
+    exit 19 ;;
+esac
+case "$DMI_LABEL" in *e93z*|*10b8*|*0007us*) ;; *)
+    echo "STOP: this installer build is restricted to Lenovo ThinkCentre E93z (type 10B8 / model 0007US)." >&2
+    echo "Detected product: ${DMI_PRODUCT:-unknown} / ${DMI_VERSION:-unknown}" >&2
+    exit 19 ;;
+esac
 CANDIDATE_FILE="$TMP_ROOT/nomad-candidates.$$"
 mkdir -p "$TMP_ROOT"
 : > "$CANDIDATE_FILE"

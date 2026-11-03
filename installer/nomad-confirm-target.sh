@@ -170,14 +170,12 @@ printf 'Connection: internal, non-removable, non-USB\n' >&3
 printf '\nTHIS WILL DELETE THE EXISTING PARTITION TABLE AND ALL PARTITIONS ON THIS DRIVE.\n' >&3
 printf 'All data on the target drive will be lost. This is not a secure data-wipe operation.\n' >&3
 printf 'No backup is created and no existing operating system or files are preserved.\n' >&3
-printf '\nEstimated installation time: roughly 30-60 minutes; drive and USB speed affect this.\n' >&3
-printf 'No internet connection is required during installation.\n' >&3
-printf 'Known limitation: the exact Wi-Fi adapter has not yet been identified.\n' >&3
+printf '\nInstall: Debian 13 with XFCE; fully offline, no network required.\n' >&3
+printf 'Estimated time: roughly 30-60 minutes; actual time depends on drive and USB speed.\n' >&3
+printf 'Known limitation: the exact Wi-Fi adapter is not yet identified.\n' >&3
 printf 'If Wi-Fi firmware is missing after installation, use wired Ethernet for updates.\n' >&3
-printf 'Human action after install: set the nomad account password once at first boot.\n' >&3
-printf 'It will install Debian 13 with the XFCE desktop.\n' >&3
-printf 'No other detected internal disk will be touched.\n' >&3
-printf '\nAfter installation, first boot will ask you to create the nomad account password once.\n' >&3
+printf 'First boot requires setting the nomad account password once.\n' >&3
+printf 'No other eligible internal disk will be touched.\n' >&3
 printf '\nTo approve, type exactly: ERASE AND INSTALL NOMAD\n' >&3
 printf 'Anything else cancels before partitioning.\n\nApproval: ' >&3
 IFS= read -r APPROVAL <&3 || APPROVAL=""

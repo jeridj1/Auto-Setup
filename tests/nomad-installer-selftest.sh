@@ -113,6 +113,9 @@ label install
   menu label Install
 EOF
 python3 "$ROOT/tools/patch-boot-menus.py" "$TMP/grub.cfg" "$TMP/txt.cfg"
+if command -v grub-script-check >/dev/null 2>&1; then
+  grub-script-check "$TMP/grub.cfg"
+fi
 cp "$TMP/grub.cfg" "$TMP/grub.once"
 cp "$TMP/txt.cfg" "$TMP/txt.once"
 python3 "$ROOT/tools/patch-boot-menus.py" "$TMP/grub.cfg" "$TMP/txt.cfg"
@@ -129,6 +132,9 @@ grep -q 'preseed/file=/cdrom/preseed.cfg' "$TMP/grub.cfg"
 grep -q 'preseed/file=/cdrom/preseed.cfg' "$TMP/txt.cfg"
 
 # The preseed must run the target gate and must not contain a fixed disk path.
+if command -v debconf-set-selections >/dev/null 2>&1; then
+  debconf-set-selections --checkonly "$ROOT/installer/preseed.cfg"
+fi
 grep -q 'partman/early_command' "$ROOT/installer/preseed.cfg"
 ! grep -Eq 'partman-auto/disk string /dev/' "$ROOT/installer/preseed.cfg"
 grep -q 'Existing partitions: %s' "$ROOT/installer/nomad-confirm-target.sh"

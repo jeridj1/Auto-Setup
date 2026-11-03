@@ -6,6 +6,7 @@ set -eu
 
 SYSFS_ROOT="${NOMAD_SYSFS_ROOT:-/sys}"
 MOUNTS_FILE="${NOMAD_PROC_MOUNTS:-/proc/mounts}"
+SWAPS_FILE="${NOMAD_PROC_SWAPS:-/proc/swaps}"
 TMP_ROOT="${NOMAD_TMP_ROOT:-/tmp}"
 
 # This first build is deliberately locked to the reference Lenovo E93z.
@@ -72,6 +73,19 @@ for DEV in $DISKS; do
     ' "$MOUNTS_FILE"; then
         continue
     fi
+
+    # Active swap partitions and disks backing device-mapper/RAID holders are in use.
+    if [ -r "$SWAPS_FILE" ] && awk -v d="$DEV" '
+        NR > 1 && ($1 == d || (index($1,d)==1 && substr($1,length(d)+1,1) ~ /[0-9p]/)) { found=1 }
+        END { exit !found }
+    ' "$SWAPS_FILE"; then
+        continue
+    fi
+    IN_USE=0
+    for HOLDER in "$BLOCK/holders/"*; do
+        if [ -e "$HOLDER" ]; then IN_USE=1; break; fi
+    done
+    [ "$IN_USE" -eq 0 ] || continue
 
     MODEL=$(cat "$BLOCK/device/model" 2>/dev/null | tr '\n|' '  ' | sed 's/[[:space:]]*$//' || true)
     VENDOR=$(cat "$BLOCK/device/vendor" 2>/dev/null | tr '\n|' '  ' | sed 's/[[:space:]]*$//' || true)

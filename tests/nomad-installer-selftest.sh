@@ -72,7 +72,7 @@ if [ x$feature_timeout_style = xy ]; then
 else
   set timeout=5
 fi
-menuentry 'Install' { true }
+  menuentry 'Install' { true }
 EOF
 cat > "$TMP/txt.cfg" <<'EOF'
 default install

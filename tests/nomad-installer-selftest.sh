@@ -43,6 +43,8 @@ grep -q 'E93Z TEST SSD' <<<"$OUT"
 grep -q 'SERIAL-ABC' <<<"$OUT"
 grep -q 'sda1' <<<"$OUT"
 grep -q 'partitions:' <<<"$OUT"
+grep -q 'filesystem unknown' <<<"$OUT"
+grep -q 'Legacy BIOS' <<<"$OUT"
 ! grep -q '/dev/sdb' <<<"$OUT"
 ! grep -q '/dev/sdc' <<<"$OUT"
 

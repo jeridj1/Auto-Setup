@@ -24,6 +24,9 @@ make_disk() {
   ln -s "$SYS/devices/$path" "$SYS/block/$name/device"
 }
 make_disk sda 0 500000000 pci0/ata0/sda "E93Z TEST SSD" "SERIAL-ABC"
+mkdir -p "$SYS/block/sda/sda1"
+printf '%s\n' "1" > "$SYS/block/sda/sda1/partition"
+printf '%s\n' "300000000" > "$SYS/block/sda/sda1/size"
 make_disk sdb 1 500000000 pci0/usb1/host1/sdb "USB INSTALLER" "USB-001"
 make_disk sdc 0 500000000 pci0/usb2/host2/sdc "USB HDD" "USB-002"
 
@@ -31,6 +34,7 @@ OUT="$(NOMAD_TMP_ROOT="$TMP" NOMAD_TMP_ROOT="$TMP" NOMAD_SYSFS_ROOT="$SYS" NOMAD
 grep -q '/dev/sda' <<<"$OUT"
 grep -q 'E93Z TEST SSD' <<<"$OUT"
 grep -q 'SERIAL-ABC' <<<"$OUT"
+grep -q 'sda1' <<<"$OUT"
 ! grep -q '/dev/sdb' <<<"$OUT"
 ! grep -q '/dev/sdc' <<<"$OUT"
 
@@ -73,4 +77,11 @@ grep -q 'preseed/file=/cdrom/preseed.cfg' "$TMP/txt.cfg"
 grep -q 'partman/early_command' "$ROOT/installer/preseed.cfg"
 ! grep -Eq 'partman-auto/disk string /dev/' "$ROOT/installer/preseed.cfg"
 
+printf '%s\n' "Dell Inc." > "$SYS/class/dmi/id/sys_vendor"
+set +e
+NOMAD_TMP_ROOT="$TMP" NOMAD_SYSFS_ROOT="$SYS" NOMAD_PROC_MOUNTS="$MOUNTS" NOMAD_TEST_DISKS="/dev/sda" NOMAD_TEST_MODE=1 sh "$ROOT/installer/nomad-confirm-target.sh" >"$TMP/wrong-system.out" 2>&1
+RC=$?
+set -e
+[[ "$RC" -eq 19 ]]
+grep -q "restricted to Lenovo ThinkCentre E93z" "$TMP/wrong-system.out"
 echo "N.O.M.A.D. installer self-test passed."

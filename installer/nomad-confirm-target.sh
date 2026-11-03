@@ -107,6 +107,7 @@ fi
 
 IFS='|' read -r TARGET VENDOR MODEL SERIAL BYTES < "$CANDIDATE_FILE"
 GIB=$(awk -v b="$BYTES" 'BEGIN {printf "%.1f GiB", b/1073741824}')
+if [ -d "$SYSFS_ROOT/firmware/efi" ]; then BOOT_MODE="UEFI"; else BOOT_MODE="Legacy BIOS"; fi
 DISK_NAME=${TARGET#/dev/}
 PARTITION_SUMMARY=""
 for PART in "$SYSFS_ROOT/block/$DISK_NAME/"*; do
@@ -115,7 +116,12 @@ for PART in "$SYSFS_ROOT/block/$DISK_NAME/"*; do
     PART_SECTORS=$(cat "$PART/size" 2>/dev/null || echo 0)
     case "$PART_SECTORS" in ''|*[!0-9]*) PART_SECTORS=0 ;; esac
     PART_GIB=$(awk -v s="$PART_SECTORS" 'BEGIN {printf "%.1f GiB", (s*512)/1073741824}')
-    PARTITION_SUMMARY="$PARTITION_SUMMARY $PART_NAME ($PART_GIB);"
+    PART_FS=""
+    if command -v blkid >/dev/null 2>&1; then
+        PART_FS=$(blkid -s TYPE -o value "/dev/$PART_NAME" 2>/dev/null || true)
+    fi
+    [ -n "$PART_FS" ] || PART_FS="filesystem unknown"
+    PARTITION_SUMMARY="$PARTITION_SUMMARY $PART_NAME ($PART_GIB, $PART_FS);"
 done
 [ -n "$PARTITION_SUMMARY" ] || PARTITION_SUMMARY=" none detected"
 
@@ -165,6 +171,7 @@ printf 'Target device: %s\n' "$TARGET" >&3
 printf 'Drive: %s %s\n' "$VENDOR" "$MODEL" >&3
 printf 'Serial: %s\n' "$SERIAL" >&3
 printf 'Capacity: %s\n' "$GIB" >&3
+printf 'Boot mode: %s\n' "$BOOT_MODE" >&3
 printf 'Existing partitions: %s\n' "$PARTITION_SUMMARY" >&3
 printf 'Connection: internal, non-removable, non-USB\n' >&3
 printf '\nTHIS WILL DELETE THE EXISTING PARTITION TABLE AND ALL PARTITIONS ON THIS DRIVE.\n' >&3

@@ -10,7 +10,7 @@ for script in "$ROOT"/linux/*.sh "$ROOT"/tests/*.sh; do
   bash -n "$script"
 done
 
-bash "$ROOT/linux/nomad-audit.sh" "$TMP/audit" >"$TMP/audit.log"
+if ! bash -x "$ROOT/linux/nomad-audit.sh" "$TMP/audit" >"$TMP/audit.log" 2>&1; then cat "$TMP/audit.log"; exit 1; fi
 test -s "$TMP/audit/nomad-hardware-report.txt"
 grep -q "READ-ONLY AUDIT" "$TMP/audit/nomad-hardware-report.txt"
 

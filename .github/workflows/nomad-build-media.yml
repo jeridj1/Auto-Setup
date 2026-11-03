@@ -1,0 +1,115 @@
+name: Build and publish N.O.M.A.D. E93z installer
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "release-trigger.txt"
+      - ".github/workflows/nomad-build-media.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nomad-e93z-media-build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Check out N.O.M.A.D.
+        uses: actions/checkout@v4
+
+      - name: Install ISO tools and Debian signing keyring
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends xorriso debian-keyring gnupg ca-certificates curl python3 coreutils
+
+      - name: Download and authenticate the official Debian 13.7 DVD-1 image
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          BASE="https://cdimage.debian.org/debian-cd/current/amd64/iso-dvd"
+          mkdir -p "$RUNNER_TEMP/debian-source"
+          cd "$RUNNER_TEMP/debian-source"
+          ISO="debian-13.7.0-amd64-DVD-1.iso"
+          for FILE in "$ISO" SHA512SUMS SHA512SUMS.sign; do
+            curl --fail --location --retry 8 --retry-all-errors --connect-timeout 30 --continue-at - \
+              "$BASE/$FILE" -o "$FILE"
+          done
+          gpgv --keyring /usr/share/keyrings/debian-role-keys.gpg --verify SHA512SUMS.sign SHA512SUMS
+          grep -E '^[0-9a-fA-F]{128}[[:space:]]+debian-13\.7\.0-amd64-DVD-1\.iso$' SHA512SUMS > expected.sha512
+          test -s expected.sha512
+          sha512sum --check expected.sha512
+          echo "Verified official Debian DVD-1 source image."
+
+      - name: Build the N.O.M.A.D. bootable installer
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/dist"
+          bash installer/build-nomad-iso.sh \
+            "$RUNNER_TEMP/debian-source/debian-13.7.0-amd64-DVD-1.iso" \
+            "$GITHUB_WORKSPACE/dist/NOMAD-Debian13.7-E93z.iso"
+          cd "$GITHUB_WORKSPACE/dist"
+          ISO="NOMAD-Debian13.7-E93z.iso"
+          sha512sum "$ISO" | awk -v name="$ISO" '{print $1 "  " name}' > "$ISO.sha512"
+
+      - name: Split ISO into GitHub Release-sized segments
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cd "$GITHUB_WORKSPACE/dist"
+          split --bytes=1700M --numeric-suffixes=0 --suffix-length=2 \
+            NOMAD-Debian13.7-E93z.iso NOMAD-Debian13.7-E93z.iso.part
+          cp "$GITHUB_WORKSPACE/windows/reassemble-nomad-iso.ps1" .
+          cat > MANIFEST.txt <<EOF
+          N.O.M.A.D. E93z installer
+          Base: Debian GNU/Linux 13.7 amd64 DVD-1
+          Target profile: Lenovo ThinkCentre E93z (machine type 10B8 / model 0007US)
+          Install: offline Debian base plus XFCE
+          Firmware: UEFI or legacy BIOS boot structures from the official Debian image
+          Destructive action: requires the exact phrase ERASE AND INSTALL NOMAD
+          Account: first boot asks the user to set the nomad password once
+          Integrity: reassemble every .part file and run the included PowerShell script;
+          it verifies the completed ISO against the accompanying SHA-512 file.
+          EOF
+          ls -lh
+
+      - name: Publish verified ISO segments as a GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          SHORT_SHA="${GITHUB_SHA:0:7}"
+          TAG="nomad-e93z-$SHORT_SHA"
+          NOTES="$RUNNER_TEMP/nomad-release-notes.md"
+          cat > "$NOTES" <<EOF
+          N.O.M.A.D. E93z installer built from commit $GITHUB_SHA.
+
+          Download **all** ISO segment files into one folder, along with the SHA-512 file and
+          reassembly PowerShell script. In PowerShell, run:
+
+          ```powershell
+          Set-ExecutionPolicy -Scope Process Bypass
+          .\reassemble-nomad-iso.ps1
+          ```
+
+          The script joins the segments and verifies the final ISO with SHA-512. Do not flash
+          the individual segments. Use Rufus or another ISO-writing utility to write the
+          completed ISO to a USB drive. The USB drive will be erased.
+
+          Installer is currently restricted to Lenovo ThinkCentre E93z firmware identity.
+          The installation target disk is separately identified and requires the phrase
+          **ERASE AND INSTALL NOMAD** before any partitioning begins.
+          EOF
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$GITHUB_WORKSPACE"/dist/* --clobber
+          else
+            gh release create "$TAG" "$GITHUB_WORKSPACE"/dist/* \
+              --title "N.O.M.A.D. E93z installer $SHORT_SHA" \
+              --notes-file "$NOTES"
+          fi

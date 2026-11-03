@@ -65,6 +65,7 @@ jobs:
           split --bytes=1700M --numeric-suffixes=0 --suffix-length=2 \
             NOMAD-Debian13.7-E93z.iso NOMAD-Debian13.7-E93z.iso.part
           cp "$GITHUB_WORKSPACE/windows/reassemble-nomad-iso.ps1" .
+cp "$GITHUB_WORKSPACE/windows/download-nomad-release.ps1" .
           cat > MANIFEST.txt <<EOF
           N.O.M.A.D. E93z installer
           Base: Debian GNU/Linux 13.7 amd64 DVD-1
@@ -73,7 +74,7 @@ jobs:
           Firmware: UEFI or legacy BIOS boot structures from the official Debian image
           Destructive action: requires the exact phrase ERASE AND INSTALL NOMAD
           Account: first boot asks the user to set the nomad password once
-          Integrity: reassemble every .part file and run the included PowerShell script;
+          Integrity: use download-nomad-release.ps1 for resumable downloads, or reassemble every .part file with the included PowerShell script;
           it verifies the completed ISO against the accompanying SHA-512 file.
           EOF
           ls -lh
@@ -113,6 +114,7 @@ jobs:
               "$GITHUB_WORKSPACE"/dist/NOMAD-Debian13.7-E93z.iso.part* \
               "$GITHUB_WORKSPACE"/dist/NOMAD-Debian13.7-E93z.iso.sha512 \
               "$GITHUB_WORKSPACE"/dist/reassemble-nomad-iso.ps1 \
+              "$GITHUB_WORKSPACE"/dist/download-nomad-release.ps1 \
               "$GITHUB_WORKSPACE"/dist/MANIFEST.txt --clobber
           else
             gh release create "$TAG" \

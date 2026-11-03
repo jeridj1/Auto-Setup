@@ -139,7 +139,7 @@ def main() -> int:
             ]
 
             # A same-length corrupt cached segment must not become permanently trusted.
-            (destination / parts[0]).write_bytes(b"\\x00" * (assets / parts[0]).stat().st_size)
+            (destination / parts[0]).write_bytes(bytes([0]) * (assets / parts[0]).stat().st_size)
             first_attempt = subprocess.run(command, text=True, capture_output=True)
             if first_attempt.returncode == 0:
                 raise RuntimeError("Downloader accepted a same-length corrupted cached ISO segment.")

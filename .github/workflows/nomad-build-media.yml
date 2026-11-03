@@ -88,25 +88,25 @@ jobs:
           TAG="nomad-e93z-$SHORT_SHA"
           NOTES="$RUNNER_TEMP/nomad-release-notes.md"
           cat > "$NOTES" <<EOF
-          **TEST CANDIDATE.** This build has automated safety and reassembly tests, but it has not yet completed a full installation on the physical E93z.
+          TEST CANDIDATE: automated safety tests pass, but the installer has not yet completed a full installation on the physical E93z.
 
           N.O.M.A.D. E93z installer built from commit $GITHUB_SHA.
 
-          Download **all** ISO segment files into one folder, along with the SHA-512 file and
-          reassembly PowerShell script. In PowerShell, run:
-
-          ```powershell
+          Download every ISO segment, the SHA-512 file, and the reassembly PowerShell script into the same folder.
+          Open PowerShell in that folder and run these two commands:
           Set-ExecutionPolicy -Scope Process Bypass
           .\reassemble-nomad-iso.ps1
-          ```
 
-          The script joins the segments and verifies the final ISO with SHA-512. Do not flash
-          the individual segments. Use Rufus or another ISO-writing utility to write the
-          completed ISO to a USB drive. The USB drive will be erased.
+          The script joins the segments and verifies the finished ISO with SHA-512. Do not flash individual parts.
+          Use Rufus or another ISO-writing utility to write the completed ISO to a USB drive; writing erases the USB.
+          Use a known-good USB port on the E93z, not the suspect port.
 
-          Installer is currently restricted to Lenovo ThinkCentre E93z firmware identity.
-          The installation target disk is separately identified and requires the phrase
-          **ERASE AND INSTALL NOMAD** before any partitioning begins.
+          The installer is restricted to Lenovo ThinkCentre E93z firmware identity.
+          It displays the target disk and existing partitions, then requires the exact phrase:
+          ERASE AND INSTALL NOMAD
+          before partitioning begins.
+
+          First boot prompts once for the nomad account password.
           EOF
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" "$GITHUB_WORKSPACE"/dist/* --clobber

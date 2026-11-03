@@ -49,6 +49,7 @@ xorriso -osirrox on -indev "$ISO" \
     exit 7
   }
 
+chmod u+w "$WORK/grub.cfg" "$WORK/txt.cfg"
 python3 "$ROOT/tools/patch-boot-menus.py" "$WORK/grub.cfg" "$WORK/txt.cfg"
 cp "$ROOT/installer/preseed.cfg" "$WORK/preseed.cfg"
 cp "$ROOT/installer/nomad-confirm-target.sh" "$WORK/nomad/nomad-confirm-target.sh"

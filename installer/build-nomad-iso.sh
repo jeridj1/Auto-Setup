@@ -9,7 +9,7 @@ if [[ -z "$ISO" || ! -f "$ISO" ]]; then
   echo "Usage: $0 /path/to/debian-13.7.0-amd64-DVD-1.iso [output.iso]" >&2
   exit 2
 fi
-for tool in xorriso python3 sha512sum; do
+for tool in xorriso python3 sha512sum grub-script-check; do
   command -v "$tool" >/dev/null 2>&1 || {
     echo "Missing required tool: $tool" >&2
     exit 3
@@ -51,6 +51,7 @@ xorriso -osirrox on -indev "$ISO" \
 
 chmod u+w "$WORK/grub.cfg" "$WORK/txt.cfg"
 python3 "$ROOT/tools/patch-boot-menus.py" "$WORK/grub.cfg" "$WORK/txt.cfg"
+grub-script-check "$WORK/grub.cfg"
 cp "$ROOT/installer/preseed.cfg" "$WORK/preseed.cfg"
 cp "$ROOT/installer/nomad-confirm-target.sh" "$WORK/nomad/nomad-confirm-target.sh"
 cp "$ROOT/installer/late-command.sh" "$WORK/nomad/late-command.sh"
@@ -89,6 +90,7 @@ xorriso -osirrox on -indev "$OUT" \
 grep -q "N.O.M.A.D. Automated install" "$WORK/final-grub.cfg"
 grep -q "N.O.M.A.D. Automated install" "$WORK/final-isolinux.cfg"
 grep -q "preseed/file=/cdrom/preseed.cfg" "$WORK/final-grub.cfg"
+grub-script-check "$WORK/final-grub.cfg"
 grep -q "preseed/file=/cdrom/preseed.cfg" "$WORK/final-isolinux.cfg"
 
 sha512sum "$OUT" | awk -v name="$(basename "$OUT")" '{print $1 "  " name}' > "$OUT.sha512"

@@ -28,7 +28,21 @@ read_sys() { cat "$1" 2>/dev/null || printf 'unknown'; }
   if have free; then free -h; else cat /proc/meminfo; fi
   echo
   echo "=== PCI DEVICES ==="
-  if have lspci; then lspci -nnk || true; else echo "lspci unavailable (pciutils not installed)"; fi
+  if have lspci; then
+    lspci -nnk || true
+  else
+    echo "lspci unavailable; showing raw PCI IDs and bound drivers from sysfs:"
+    for DEV in /sys/bus/pci/devices/*; do
+      [ -d "$DEV" ] || continue
+      BDF=${DEV##*/}
+      VENDOR=$(read_sys "$DEV/vendor")
+      DEVICE=$(read_sys "$DEV/device")
+      CLASS=$(read_sys "$DEV/class")
+      DRIVER="unbound"
+      [ -L "$DEV/driver" ] && DRIVER=$(basename "$(readlink -f "$DEV/driver")")
+      printf '%s vendor=%s device=%s class=%s driver=%s\\n' "$BDF" "$VENDOR" "$DEVICE" "$CLASS" "$DRIVER"
+    done
+  fi
   echo
   echo "=== STORAGE ==="
   if have lsblk; then lsblk -e 7 -o NAME,PATH,TYPE,SIZE,MODEL,SERIAL,TRAN,RM,RO,FSTYPE,MOUNTPOINTS || true; fi
@@ -36,9 +50,21 @@ read_sys() { cat "$1" 2>/dev/null || printf 'unknown'; }
   echo "=== NETWORK ==="
   if have ip; then ip -brief link || true; ip -brief address || true; fi
   if have nmcli; then nmcli -t -f DEVICE,TYPE,STATE,CONNECTION device status || true; fi
+  if have rfkill; then rfkill list || true; fi
+  if have iw; then iw dev || true; fi
   echo
   echo "=== USB ==="
-  if have lsusb; then lsusb || true; fi
+  if have lsusb; then
+    lsusb || true
+  else
+    echo "lsusb unavailable; showing USB IDs from sysfs:"
+    for DEV in /sys/bus/usb/devices/*; do
+      [ -r "$DEV/idVendor" ] || continue
+      printf '%s vendor=%s product=%s manufacturer=%s name=%s\\n' \
+        "${DEV##*/}" "$(read_sys "$DEV/idVendor")" "$(read_sys "$DEV/idProduct")" \
+        "$(read_sys "$DEV/manufacturer")" "$(read_sys "$DEV/product")"
+    done
+  fi
   echo
   echo "=== NOTES ==="
   echo "READ-ONLY AUDIT: no partitions, filesystems, or settings were changed."
@@ -71,6 +97,8 @@ data={
  "cpu":cmd(["lscpu"]),
  "memory":cmd(["free","-b"]),
  "pci":cmd(["lspci","-nnk"]),
+ "pci_sysfs":cmd(["sh","-c","for d in /sys/bus/pci/devices/*; do [ -d \"$d\" ] || continue; printf '%s %s:%s class=%s driver=%s\\n' \"$(basename \"$d\")\" \"$(cat \"$d/vendor\" 2>/dev/null)\" \"$(cat \"$d/device\" 2>/dev/null)\" \"$(cat \"$d/class\" 2>/dev/null)\" \"$(basename \"$(readlink -f \"$d/driver\" 2>/dev/null)\" 2>/dev/null || echo unbound)\"; done"]),
+ "usb_sysfs":cmd(["sh","-c","for d in /sys/bus/usb/devices/*; do [ -r \"$d/idVendor\" ] || continue; printf '%s %s:%s %s %s\\n' \"$(basename \"$d\")\" \"$(cat \"$d/idVendor\")\" \"$(cat \"$d/idProduct\" 2>/dev/null)\" \"$(cat \"$d/manufacturer\" 2>/dev/null)\" \"$(cat \"$d/product\" 2>/dev/null)\"; done"]),
  "blockdevices":block.get("blockdevices",[]),
  "network_links":cmd(["ip","-brief","link"]),
  "network_addresses":cmd(["ip","-brief","address"]),

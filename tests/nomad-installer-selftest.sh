@@ -50,7 +50,13 @@ grep -q 'found 0 eligible internal disks' "$TMP/mounted.out"
 
 cat > "$TMP/grub.cfg" <<'EOF'
 set default=0
-set timeout=5
+search --no-floppy --set=root --label Debian
+if [ x$feature_timeout_style = xy ]; then
+  set timeout_style=menu
+  set timeout=5
+else
+  set timeout=5
+fi
 menuentry 'Install' { true }
 EOF
 cat > "$TMP/txt.cfg" <<'EOF'
@@ -65,6 +71,44 @@ python3 "$ROOT/tools/patch-boot-menus.py" "$TMP/grub.cfg" "$TMP/txt.cfg"
 cmp "$TMP/grub.cfg" "$TMP/grub.once"
 cmp "$TMP/txt.cfg" "$TMP/txt.once"
 grep -q 'set timeout=-1' "$TMP/grub.cfg"
+SEARCH_LINE=$(grep -n '^search --no-floppy' "$TMP/grub.cfg" | cut -d: -f1)
+CUSTOM_LINE=$(grep -n 'N.O.M.A.D. Automated install' "$TMP/grub.cfg" | head -n1 | cut -d: -f1)
+ORIGINAL_LINE=$(grep -n "menuentry 'Install'" "$TMP/grub.cfg" | cut -d: -f1)
+[[ "$SEARCH_LINE" -lt "$CUSTOM_LINE" ]]
+[[ "$CUSTOM_LINE" -lt "$ORIGINAL_LINE" ]]
+grep -q '^fi
+grep -q 'preseed/file=/cdrom/preseed.cfg' "$TMP/grub.cfg"
+grep -q 'preseed/file=/cdrom/preseed.cfg' "$TMP/txt.cfg"
+
+grep -q 'partman/early_command' "$ROOT/installer/preseed.cfg"
+! grep -Eq 'partman-auto/disk string /dev/' "$ROOT/installer/preseed.cfg"
+
+printf '%s\n' "Dell Inc." > "$SYS/class/dmi/id/sys_vendor"
+if NOMAD_TMP_ROOT="$TMP" NOMAD_SYSFS_ROOT="$SYS" NOMAD_PROC_MOUNTS="$MOUNTS" NOMAD_TEST_DISKS="/dev/sda" NOMAD_TEST_MODE=1 sh "$ROOT/installer/nomad-confirm-target.sh" >"$TMP/wrong-system.out" 2>&1; then RC=0; else RC=$?; fi
+[[ "$RC" -eq 19 ]]
+grep -q "restricted to Lenovo ThinkCentre E93z" "$TMP/wrong-system.out"
+
+# A second partman callback must match the complete approved drive identity.
+: > "$MOUNTS"
+printf '%s\n' "LENOVO" > "$SYS/class/dmi/id/sys_vendor"
+mkdir -p "$TMP/bin"
+cat > "$TMP/bin/debconf-set" <<'EOF'
+#!/bin/sh
+printf '%s\n' "$*" >> "$NOMAD_DEBCONF_LOG"
+EOF
+chmod +x "$TMP/bin/debconf-set"
+printf '%s\n' "/dev/sda" "TESTVENDOR" "E93Z TEST SSD" "SERIAL-ABC" "256000000000" > "$TMP/nomad-target-approved"
+if NOMAD_TEST_DISKS="/dev/sda" NOMAD_TMP_ROOT="$TMP" NOMAD_SYSFS_ROOT="$SYS" NOMAD_PROC_MOUNTS="$MOUNTS" NOMAD_DEBCONF_LOG="$TMP/debconf.log" PATH="$TMP/bin:$PATH" sh "$ROOT/installer/nomad-confirm-target.sh"; then RC=0; else RC=$?; fi
+[[ "$RC" -eq 0 ]]
+grep -q 'partman-auto/disk /dev/sda' "$TMP/debconf.log"
+grep -q 'grub-installer/bootdev /dev/sda' "$TMP/debconf.log"
+
+printf '%s\n' "SERIAL-CHANGED" > "$SYS/devices/pci0/ata0/sda/serial"
+if NOMAD_TEST_DISKS="/dev/sda" NOMAD_TMP_ROOT="$TMP" NOMAD_SYSFS_ROOT="$SYS" NOMAD_PROC_MOUNTS="$MOUNTS" NOMAD_DEBCONF_LOG="$TMP/debconf.log" PATH="$TMP/bin:$PATH" sh "$ROOT/installer/nomad-confirm-target.sh" >"$TMP/identity-mismatch.out" 2>&1; then RC=0; else RC=$?; fi
+[[ "$RC" -eq 22 ]]
+grep -q 'approved disk identity changed' "$TMP/identity-mismatch.out"
+echo "N.O.M.A.D. installer self-test passed."
+ "$TMP/grub.cfg"
 grep -q 'preseed/file=/cdrom/preseed.cfg' "$TMP/grub.cfg"
 grep -q 'preseed/file=/cdrom/preseed.cfg' "$TMP/txt.cfg"
 

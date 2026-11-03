@@ -12,4 +12,4 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
       - name: Run read-only self-test
-        run: bash -x tests/nomad-selftest.sh
+        run: bash tests/nomad-selftest.sh

@@ -35,7 +35,7 @@ make_disk sdb 1 500000000 pci0/usb1/host1/sdb "USB INSTALLER" "USB-001"
 make_disk sdc 0 500000000 pci0/usb2/host2/sdc "USB HDD" "USB-002"
 
 # Exactly one internal drive should be detected; removable and USB drives are excluded.
-OUT="$(NOMAD_TMP_ROOT="$TMP" NOMAD_SYSFS_ROOT="$SYS" NOMAD_PROC_MOUNTS="$MOUNTS" \
+OUT="$(NOMAD_SKIP_BLKID=1 NOMAD_TMP_ROOT="$TMP" NOMAD_SYSFS_ROOT="$SYS" NOMAD_PROC_MOUNTS="$MOUNTS" \
   NOMAD_TEST_DISKS="/dev/sda /dev/sdb /dev/sdc" NOMAD_TEST_MODE=1 \
   sh "$ROOT/installer/nomad-confirm-target.sh")"
 grep -q '/dev/sda' <<<"$OUT"

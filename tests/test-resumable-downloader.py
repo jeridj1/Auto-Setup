@@ -133,10 +133,24 @@ def main() -> int:
         thread.start()
         try:
             api = f"http://127.0.0.1:{server.server_address[1]}/releases"
-            subprocess.run([
+            command = [
                 "pwsh", "-NoLogo", "-NoProfile", "-File", str(downloader),
                 "-Directory", str(destination), "-ApiUrl", api,
-            ], check=True)
+            ]
+
+            # A same-length corrupt cached segment must not become permanently trusted.
+            (destination / parts[0]).write_bytes(b"\\x00" * (assets / parts[0]).stat().st_size)
+            first_attempt = subprocess.run(command, text=True, capture_output=True)
+            if first_attempt.returncode == 0:
+                raise RuntimeError("Downloader accepted a same-length corrupted cached ISO segment.")
+            if "segments have been discarded" not in (first_attempt.stdout + first_attempt.stderr):
+                raise RuntimeError("Checksum failure did not report that corrupt segments were discarded.")
+            if any((destination / name).exists() for name in parts):
+                raise RuntimeError("Checksum failure left cached ISO segments behind.")
+
+            # The next run must fetch clean segments; the server now interrupts the
+            # first part halfway through to verify that the partial transfer resumes.
+            subprocess.run(command, check=True)
             output = destination / base
             if not output.is_file():
                 raise RuntimeError("Downloader did not create the assembled ISO.")
@@ -146,7 +160,7 @@ def main() -> int:
                 raise RuntimeError("The simulated network interruption was not triggered.")
             if not resumed["seen"]:
                 raise RuntimeError("Downloader did not resume with an HTTP Range request.")
-            print("Resumable Windows downloader integration test passed.")
+            print("Corrupt-cache recovery and interrupted-download resume integration tests passed.")
         finally:
             server.shutdown()
             server.server_close()

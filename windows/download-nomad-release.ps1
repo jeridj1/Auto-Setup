@@ -2,7 +2,8 @@
 param(
     [string]$Repository = "jeridj1/Auto-Setup",
     [string]$Directory = (Join-Path (Get-Location).Path "NOMAD-E93z-Installer"),
-    [bool]$IncludePrereleases = $true
+    [bool]$IncludePrereleases = $true,
+    [string]$ApiUrl = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -124,7 +125,7 @@ function Get-ResumableAsset($Asset) {
 
 try {
     Write-Host "Finding the latest N.O.M.A.D. E93z release..."
-    $ApiUrl = "https://api.github.com/repos/$Repository/releases?per_page=30"
+    $ApiUrl = if ([string]::IsNullOrWhiteSpace($ApiUrl)) { "https://api.github.com/repos/$Repository/releases?per_page=30" } else { $ApiUrl }
     $ApiResponse = $Client.GetAsync($ApiUrl).GetAwaiter().GetResult()
     $ApiResponse.EnsureSuccessStatusCode()
     $Releases = $ApiResponse.Content.ReadAsStringAsync().GetAwaiter().GetResult() | ConvertFrom-Json

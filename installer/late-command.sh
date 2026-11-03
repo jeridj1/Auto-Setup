@@ -1,12 +1,12 @@
 #!/bin/sh
 # Runs from Debian Installer after the target system has been installed.
 set -eu
-MEDIA=/cdrom
+MEDIA="${NOMAD_MEDIA_ROOT:-/cdrom}"
 [ -d "$MEDIA/nomad" ] || {
     echo "N.O.M.A.D. support files not found at /cdrom/nomad." >&2
     exit 30
 }
-TARGET_ROOT=/target
+TARGET_ROOT="${NOMAD_TARGET_ROOT:-/target}"
 [ -d "$TARGET_ROOT/etc" ] || exit 31
 
 # Network configuration is skipped in the installer to guarantee a fully offline
@@ -65,5 +65,7 @@ Installed configuration:
 - No network downloads required during the base installation
 EOF
 
+# Add sudo access after the sudo package has created its group.
+in-target usermod -aG sudo nomad
 in-target systemctl enable nomad-firstboot-password.service
 echo "N.O.M.A.D. late-install setup completed."

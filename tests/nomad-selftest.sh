@@ -6,7 +6,7 @@ ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
-for script in "$ROOT"/linux/*.sh "$ROOT"/tests/*.sh; do
+for script in "$ROOT"/linux/*.sh "$ROOT"/installer/*.sh "$ROOT"/tests/*.sh; do
   bash -n "$script"
 done
 
@@ -29,4 +29,5 @@ fi
 grep -q 'This utility will not partition, format, erase, or install anything' "$ROOT/linux/nomad-propose.sh"
 grep -q 'No target will be guessed' "$ROOT/linux/nomad-propose.sh"
 
+bash "$ROOT/tests/nomad-installer-selftest.sh"
 echo "N.O.M.A.D. self-test passed."

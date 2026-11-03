@@ -5,3 +5,5 @@ Build current E93z installer after GRUB boot patcher correction.
 Build updated E93z ISO with the latest offline setup, full approval screen, filesystem reporting, and safety tests.
 
 Build E93z test candidate after late-install, sudo, and first-boot service validation.
+
+Build final E93z candidate including the sysfs PCI and USB audit fallback.

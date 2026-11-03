@@ -45,6 +45,10 @@ for DEV in $DISKS; do
     BLOCK="$SYSFS_ROOT/block/$NAME"
     [ -r "$BLOCK/removable" ] || continue
     [ "$(cat "$BLOCK/removable" 2>/dev/null || echo 1)" = "0" ] || continue
+    # A kernel-read-only drive cannot accept a normal installation.
+    if [ -r "$BLOCK/ro" ] && [ "$(cat "$BLOCK/ro" 2>/dev/null || echo 1)" != "0" ]; then
+        continue
+    fi
 
     DEVICE_PATH=$(readlink -f "$BLOCK/device" 2>/dev/null || true)
     case "$DEVICE_PATH" in

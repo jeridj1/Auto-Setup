@@ -77,6 +77,7 @@ if NOMAD_TMP_ROOT="$TMP" NOMAD_SYSFS_ROOT="$SYS" NOMAD_PROC_MOUNTS="$MOUNTS" NOM
 grep -q "restricted to Lenovo ThinkCentre E93z" "$TMP/wrong-system.out"
 
 # A second partman callback must match the complete approved drive identity.
+: > "$MOUNTS"
 printf '%s\n' "LENOVO" > "$SYS/class/dmi/id/sys_vendor"
 mkdir -p "$TMP/bin"
 cat > "$TMP/bin/debconf-set" <<'EOF'

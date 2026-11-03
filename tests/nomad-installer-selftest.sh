@@ -21,6 +21,7 @@ make_disk() {
   mkdir -p "$SYS/block/$name"
   printf '%s\n' "$removable" > "$SYS/block/$name/removable"
   printf '%s\n' "$sectors" > "$SYS/block/$name/size"
+  printf '%s\n' "0" > "$SYS/block/$name/ro"
   printf '%s\n' "$model" > "$SYS/devices/$path/model"
   printf '%s\n' "TESTVENDOR" > "$SYS/devices/$path/vendor"
   printf '%s\n' "$serial" > "$SYS/devices/$path/serial"
@@ -55,6 +56,15 @@ if NOMAD_TMP_ROOT="$TMP" NOMAD_SYSFS_ROOT="$SYS" NOMAD_PROC_MOUNTS="$MOUNTS" \
   sh "$ROOT/installer/nomad-confirm-target.sh" >"$TMP/multiple.out" 2>&1; then RC=0; else RC=$?; fi
 [[ "$RC" -eq 21 ]]
 grep -q 'found 2 eligible internal disks' "$TMP/multiple.out"
+
+# A read-only internal disk is not an eligible installation target.
+make_disk sde 0 500000000 pci0/ata1/sdd "READ ONLY DISK" "SERIAL-RO"
+printf '%s\n' "1" > "$SYS/block/sde/ro"
+if NOMAD_TMP_ROOT="$TMP" NOMAD_SYSFS_ROOT="$SYS" NOMAD_PROC_MOUNTS="$MOUNTS" \
+  NOMAD_TEST_DISKS="/dev/sde" NOMAD_TEST_MODE=1 \
+  sh "$ROOT/installer/nomad-confirm-target.sh" >"$TMP/readonly.out" 2>&1; then RC=0; else RC=$?; fi
+[[ "$RC" -eq 21 ]]
+grep -q 'found 0 eligible internal disks' "$TMP/readonly.out"
 
 # Any mounted partition makes the drive ineligible.
 printf '/dev/sda1 / ext4 rw 0 0\n' > "$MOUNTS"

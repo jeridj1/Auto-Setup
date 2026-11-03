@@ -79,6 +79,18 @@ xorriso -indev "$OUT" -find / -name preseed.cfg -exec echo >"$WORK/output-files.
 grep -q 'preseed.cfg' "$WORK/output-files.txt"
 xorriso -indev "$OUT" -find / -name nomad-confirm-target.sh -exec echo >>"$WORK/output-files.txt" 2>&1
 grep -q 'nomad-confirm-target.sh' "$WORK/output-files.txt"
+
+# Verify the final ISO, not merely the temporary source configs, contains both
+# boot-menu entries and their preseed paths after xorriso remastering.
+xorriso -osirrox on -indev "$OUT" \
+  -extract /boot/grub/grub.cfg "$WORK/final-grub.cfg" \
+  -extract /isolinux/txt.cfg "$WORK/final-isolinux.cfg" \
+  >"$WORK/final-menu-extract.log" 2>&1
+grep -q "N.O.M.A.D. Automated install" "$WORK/final-grub.cfg"
+grep -q "N.O.M.A.D. Automated install" "$WORK/final-isolinux.cfg"
+grep -q "preseed/file=/cdrom/preseed.cfg" "$WORK/final-grub.cfg"
+grep -q "preseed/file=/cdrom/preseed.cfg" "$WORK/final-isolinux.cfg"
+
 sha512sum "$OUT" | awk -v name="$(basename "$OUT")" '{print $1 "  " name}' > "$OUT.sha512"
 
 echo

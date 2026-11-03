@@ -65,7 +65,7 @@ jobs:
           split --bytes=1700M --numeric-suffixes=0 --suffix-length=2 \
             NOMAD-Debian13.7-E93z.iso NOMAD-Debian13.7-E93z.iso.part
           cp "$GITHUB_WORKSPACE/windows/reassemble-nomad-iso.ps1" .
-cp "$GITHUB_WORKSPACE/windows/download-nomad-release.ps1" .
+          cp "$GITHUB_WORKSPACE/windows/download-nomad-release.ps1" .
           cat > MANIFEST.txt <<EOF
           N.O.M.A.D. E93z installer
           Base: Debian GNU/Linux 13.7 amd64 DVD-1
@@ -93,10 +93,14 @@ cp "$GITHUB_WORKSPACE/windows/download-nomad-release.ps1" .
 
           N.O.M.A.D. E93z installer built from commit $GITHUB_SHA.
 
-          Download every ISO segment, the SHA-512 file, and the reassembly PowerShell script into the same folder.
-          Open PowerShell in that folder and run these two commands:
+          Easiest method: download download-nomad-release.ps1, open PowerShell in its folder,
+          and run:
           Set-ExecutionPolicy -Scope Process Bypass
-          .\reassemble-nomad-iso.ps1
+          .\download-nomad-release.ps1
+
+          The downloader finds the latest E93z release and resumes partial ISO-segment downloads.
+          Alternatively, download all parts plus the checksum and reassemble-nomad-iso.ps1,
+          then run the reassembler manually.
 
           The script joins the segments and verifies the finished ISO with SHA-512. Do not flash individual parts.
           Use Rufus or another ISO-writing utility to write the completed ISO to a USB drive; writing erases the USB.

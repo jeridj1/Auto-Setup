@@ -71,14 +71,15 @@ for DEV in $DISKS; do
 
     MODEL=$(cat "$BLOCK/device/model" 2>/dev/null | tr '\n|' '  ' | sed 's/[[:space:]]*$//' || true)
     VENDOR=$(cat "$BLOCK/device/vendor" 2>/dev/null | tr '\n|' '  ' | sed 's/[[:space:]]*$//' || true)
-    SERIAL=""
-    if command -v udevadm >/dev/null 2>&1; then
+    # Prefer the serial exposed through this disk's sysfs device path.
+    # udevadm is a fallback only; this also keeps test fixtures isolated from host devices.
+    SERIAL=$(cat "$BLOCK/device/serial" 2>/dev/null || true)
+    if [ -z "$SERIAL" ] && command -v udevadm >/dev/null 2>&1; then
         SERIAL=$(udevadm info --query=property --name="$DEV" 2>/dev/null |
             sed -n 's/^ID_SERIAL_SHORT=//p' | head -n 1 || true)
         [ -n "$SERIAL" ] || SERIAL=$(udevadm info --query=property --name="$DEV" 2>/dev/null |
             sed -n 's/^ID_SERIAL=//p' | head -n 1 || true)
     fi
-    [ -n "$SERIAL" ] || SERIAL=$(cat "$BLOCK/device/serial" 2>/dev/null || true)
     [ -n "$MODEL" ] || MODEL="Model unavailable"
     [ -n "$VENDOR" ] || VENDOR="Vendor unavailable"
     [ -n "$SERIAL" ] || SERIAL="Serial unavailable"

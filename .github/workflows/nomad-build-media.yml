@@ -109,9 +109,17 @@ jobs:
           First boot prompts once for the nomad account password.
           EOF
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" "$GITHUB_WORKSPACE"/dist/* --clobber
+            gh release upload "$TAG" \
+              "$GITHUB_WORKSPACE"/dist/NOMAD-Debian13.7-E93z.iso.part* \
+              "$GITHUB_WORKSPACE"/dist/NOMAD-Debian13.7-E93z.iso.sha512 \
+              "$GITHUB_WORKSPACE"/dist/reassemble-nomad-iso.ps1 \
+              "$GITHUB_WORKSPACE"/dist/MANIFEST.txt --clobber
           else
-            gh release create "$TAG" "$GITHUB_WORKSPACE"/dist/* \
+            gh release create "$TAG" \
+              "$GITHUB_WORKSPACE"/dist/NOMAD-Debian13.7-E93z.iso.part* \
+              "$GITHUB_WORKSPACE"/dist/NOMAD-Debian13.7-E93z.iso.sha512 \
+              "$GITHUB_WORKSPACE"/dist/reassemble-nomad-iso.ps1 \
+              "$GITHUB_WORKSPACE"/dist/MANIFEST.txt \
               --title "N.O.M.A.D. E93z installer $SHORT_SHA" \
               --notes-file "$NOTES" --prerelease
           fi

@@ -30,7 +30,7 @@ printf '%s\n' "300000000" > "$SYS/block/sda/sda1/size"
 make_disk sdb 1 500000000 pci0/usb1/host1/sdb "USB INSTALLER" "USB-001"
 make_disk sdc 0 500000000 pci0/usb2/host2/sdc "USB HDD" "USB-002"
 
-OUT="$(NOMAD_TMP_ROOT="$TMP" NOMAD_TMP_ROOT="$TMP" NOMAD_SYSFS_ROOT="$SYS" NOMAD_PROC_MOUNTS="$MOUNTS" NOMAD_TEST_DISKS="/dev/sda /dev/sdb /dev/sdc" NOMAD_TEST_MODE=1 sh "$ROOT/installer/nomad-confirm-target.sh")"
+OUT="$(NOMAD_TMP_ROOT="$TMP" NOMAD_SYSFS_ROOT="$SYS" NOMAD_PROC_MOUNTS="$MOUNTS" NOMAD_TEST_DISKS="/dev/sda /dev/sdb /dev/sdc" NOMAD_TEST_MODE=1 sh "$ROOT/installer/nomad-confirm-target.sh")"
 grep -q '/dev/sda' <<<"$OUT"
 grep -q 'E93Z TEST SSD' <<<"$OUT"
 grep -q 'SERIAL-ABC' <<<"$OUT"
@@ -39,18 +39,12 @@ grep -q 'sda1' <<<"$OUT"
 ! grep -q '/dev/sdc' <<<"$OUT"
 
 make_disk sdd 0 500000000 pci0/ata1/sdd "SECOND INTERNAL" "SERIAL-SECOND"
-set +e
-NOMAD_SYSFS_ROOT="$SYS" NOMAD_PROC_MOUNTS="$MOUNTS" NOMAD_TEST_DISKS="/dev/sda /dev/sdd" NOMAD_TEST_MODE=1 sh "$ROOT/installer/nomad-confirm-target.sh" >"$TMP/multiple.out" 2>&1
-RC=$?
-set -e
+if NOMAD_TMP_ROOT="$TMP" NOMAD_SYSFS_ROOT="$SYS" NOMAD_PROC_MOUNTS="$MOUNTS" NOMAD_TEST_DISKS="/dev/sda /dev/sdd" NOMAD_TEST_MODE=1 sh "$ROOT/installer/nomad-confirm-target.sh" >"$TMP/multiple.out" 2>&1; then RC=0; else RC=$?; fi
 [[ "$RC" -eq 21 ]]
 grep -q 'found 2 eligible internal disks' "$TMP/multiple.out"
 
 printf '/dev/sda1 / ext4 rw 0 0\n' > "$MOUNTS"
-set +e
-NOMAD_SYSFS_ROOT="$SYS" NOMAD_PROC_MOUNTS="$MOUNTS" NOMAD_TEST_DISKS="/dev/sda" NOMAD_TEST_MODE=1 sh "$ROOT/installer/nomad-confirm-target.sh" >"$TMP/mounted.out" 2>&1
-RC=$?
-set -e
+if NOMAD_TMP_ROOT="$TMP" NOMAD_SYSFS_ROOT="$SYS" NOMAD_PROC_MOUNTS="$MOUNTS" NOMAD_TEST_DISKS="/dev/sda" NOMAD_TEST_MODE=1 sh "$ROOT/installer/nomad-confirm-target.sh" >"$TMP/mounted.out" 2>&1; then RC=0; else RC=$?; fi
 [[ "$RC" -eq 21 ]]
 grep -q 'found 0 eligible internal disks' "$TMP/mounted.out"
 
@@ -78,10 +72,7 @@ grep -q 'partman/early_command' "$ROOT/installer/preseed.cfg"
 ! grep -Eq 'partman-auto/disk string /dev/' "$ROOT/installer/preseed.cfg"
 
 printf '%s\n' "Dell Inc." > "$SYS/class/dmi/id/sys_vendor"
-set +e
-NOMAD_TMP_ROOT="$TMP" NOMAD_SYSFS_ROOT="$SYS" NOMAD_PROC_MOUNTS="$MOUNTS" NOMAD_TEST_DISKS="/dev/sda" NOMAD_TEST_MODE=1 sh "$ROOT/installer/nomad-confirm-target.sh" >"$TMP/wrong-system.out" 2>&1
-RC=$?
-set -e
+if NOMAD_TMP_ROOT="$TMP" NOMAD_SYSFS_ROOT="$SYS" NOMAD_PROC_MOUNTS="$MOUNTS" NOMAD_TEST_DISKS="/dev/sda" NOMAD_TEST_MODE=1 sh "$ROOT/installer/nomad-confirm-target.sh" >"$TMP/wrong-system.out" 2>&1; then RC=0; else RC=$?; fi
 [[ "$RC" -eq 19 ]]
 grep -q "restricted to Lenovo ThinkCentre E93z" "$TMP/wrong-system.out"
 echo "N.O.M.A.D. installer self-test passed."

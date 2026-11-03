@@ -148,7 +148,7 @@ if [ -r "$APPROVAL_FILE" ]; then
 fi
 
 if [ "${NOMAD_TEST_MODE:-0}" = "1" ]; then
-    echo "TEST-ONLY DISCOVERY RESULT: $TARGET | $VENDOR $MODEL | $SERIAL | $GIB | partitions:$PARTITION_SUMMARY"
+    echo "TEST-ONLY DISCOVERY RESULT: $TARGET | $VENDOR $MODEL | $SERIAL | $GIB | boot:$BOOT_MODE | partitions:$PARTITION_SUMMARY"
     exit 0
 fi
 

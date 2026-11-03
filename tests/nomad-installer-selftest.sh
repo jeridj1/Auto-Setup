@@ -137,4 +137,36 @@ if NOMAD_TEST_DISKS="/dev/sda" NOMAD_TMP_ROOT="$TMP" NOMAD_SYSFS_ROOT="$SYS" \
 [[ "$RC" -eq 22 ]]
 grep -q 'approved disk identity changed' "$TMP/identity-mismatch.out"
 
+# Exercise the final Debian Installer late-command in an isolated fake target root.
+MEDIA="$TMP/media"
+TARGET_ROOT="$TMP/target"
+mkdir -p "$MEDIA/nomad" "$TARGET_ROOT/etc" "$TARGET_ROOT/root" "$TMP/late-bin"
+cp "$ROOT/linux/nomad-audit.sh" "$MEDIA/nomad/"
+cp "$ROOT/linux/nomad-propose.sh" "$MEDIA/nomad/"
+cp "$ROOT/installer/nomad-firstboot-password.sh" "$MEDIA/nomad/"
+cp "$ROOT/installer/nomad-firstboot-password.service" "$MEDIA/nomad/"
+cat > "$TMP/late-bin/in-target" <<'EOF'
+#!/bin/sh
+printf '%s\n' "$*" >> "$NOMAD_LATE_LOG"
+EOF
+chmod +x "$TMP/late-bin/in-target"
+: > "$TARGET_ROOT/etc/hosts"
+NOMAD_MEDIA_ROOT="$MEDIA" NOMAD_TARGET_ROOT="$TARGET_ROOT" NOMAD_IN_TARGET="$TMP/late-bin/in-target" NOMAD_LATE_LOG="$TMP/late.log" sh "$ROOT/installer/late-command.sh"
+[[ "$(cat "$TARGET_ROOT/etc/hostname")" == "nomad-e93z" ]]
+grep -q '127.0.1.1 nomad-e93z.local nomad-e93z' "$TARGET_ROOT/etc/hosts"
+test -x "$TARGET_ROOT/usr/local/share/nomad/nomad-audit.sh"
+test -x "$TARGET_ROOT/usr/local/share/nomad/nomad-propose.sh"
+test -x "$TARGET_ROOT/usr/local/sbin/nomad-firstboot-password"
+test -L "$TARGET_ROOT/usr/local/bin/nomad-audit"
+test -L "$TARGET_ROOT/usr/local/bin/nomad-propose"
+test -f "$TARGET_ROOT/etc/systemd/system/nomad-firstboot-password.service"
+grep -q 'Suites: trixie trixie-updates' "$TARGET_ROOT/etc/apt/sources.list.d/debian.sources"
+grep -q 'Suites: trixie-security' "$TARGET_ROOT/etc/apt/sources.list.d/debian.sources"
+grep -q 'Installed configuration:' "$TARGET_ROOT/root/NOMAD_INSTALL_REPORT.txt"
+grep -q 'usermod -aG sudo nomad' "$TMP/late.log"
+grep -q 'systemctl enable nomad-firstboot-password.service' "$TMP/late.log"
+if command -v systemd-analyze >/dev/null 2>&1; then
+  systemd-analyze verify "$TARGET_ROOT/etc/systemd/system/nomad-firstboot-password.service"
+fi
+
 echo "N.O.M.A.D. installer self-test passed."

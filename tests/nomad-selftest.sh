@@ -22,9 +22,19 @@ with open(sys.argv[1], encoding="utf-8") as f:
 assert report.get("read_only") is True
 assert isinstance(report.get("blockdevices"), list)
 assert "system" in report and "cpu" in report and "memory" in report
+assert isinstance(report.get("pci_sysfs"), list)
+assert isinstance(report.get("usb_sysfs"), list)
 print("JSON report: valid")
 PY
 fi
+
+# Force the no-pciutils/no-usbutils paths and prove the text audit falls back to sysfs.
+if ! NOMAD_FORCE_SYSFS_PCI=1 NOMAD_FORCE_SYSFS_USB=1 bash "$ROOT/linux/nomad-audit.sh" "$TMP/audit-sysfs" >"$TMP/audit-sysfs.log" 2>&1; then
+  cat "$TMP/audit-sysfs.log"
+  exit 1
+fi
+grep -q 'raw PCI IDs and bound drivers from sysfs' "$TMP/audit-sysfs/nomad-hardware-report.txt"
+grep -q 'USB IDs from sysfs' "$TMP/audit-sysfs/nomad-hardware-report.txt"
 
 grep -q 'This utility will not partition, format, erase, or install anything' "$ROOT/linux/nomad-propose.sh"
 grep -q 'No target will be guessed' "$ROOT/linux/nomad-propose.sh"

@@ -167,7 +167,9 @@ grep -q 'Installed configuration:' "$TARGET_ROOT/root/NOMAD_INSTALL_REPORT.txt"
 grep -q 'usermod -aG sudo nomad' "$TMP/late.log"
 grep -q 'systemctl enable nomad-firstboot-password.service' "$TMP/late.log"
 if command -v systemd-analyze >/dev/null 2>&1; then
-  systemd-analyze verify --root="$TARGET_ROOT" /etc/systemd/system/nomad-firstboot-password.service
+  sed "s|^ExecStart=/usr/local/sbin/nomad-firstboot-password$|ExecStart=$TARGET_ROOT/usr/local/sbin/nomad-firstboot-password|" \
+    "$TARGET_ROOT/etc/systemd/system/nomad-firstboot-password.service" > "$TMP/nomad-firstboot-password-verify.service"
+  systemd-analyze verify "$TMP/nomad-firstboot-password-verify.service"
 fi
 
 echo "N.O.M.A.D. installer self-test passed."

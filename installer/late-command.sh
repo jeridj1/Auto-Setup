@@ -9,6 +9,13 @@ MEDIA=/cdrom
 TARGET_ROOT=/target
 [ -d "$TARGET_ROOT/etc" ] || exit 31
 
+# Network configuration is skipped in the installer to guarantee a fully offline
+# install. Set the installed hostname directly.
+printf '%s\\n' "nomad-e93z" > "$TARGET_ROOT/etc/hostname"
+if ! grep -q '^127\\.0\\.1\\.1[[:space:]]' "$TARGET_ROOT/etc/hosts"; then
+    printf '%s\\n' "127.0.1.1 nomad-e93z.local nomad-e93z" >> "$TARGET_ROOT/etc/hosts"
+fi
+
 mkdir -p "$TARGET_ROOT/usr/local/share/nomad" "$TARGET_ROOT/usr/local/bin" "$TARGET_ROOT/usr/local/sbin"
 cp "$MEDIA/nomad/nomad-audit.sh" "$TARGET_ROOT/usr/local/share/nomad/nomad-audit.sh"
 cp "$MEDIA/nomad/nomad-propose.sh" "$TARGET_ROOT/usr/local/share/nomad/nomad-propose.sh"

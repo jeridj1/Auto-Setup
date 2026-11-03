@@ -28,17 +28,17 @@ read_sys() { cat "$1" 2>/dev/null || printf 'unknown'; }
   if have free; then free -h; else cat /proc/meminfo; fi
   echo
   echo "=== PCI DEVICES ==="
-  if have lspci; then lspci -nnk; else echo "lspci unavailable (pciutils not installed)"; fi
+  if have lspci; then lspci -nnk || true; else echo "lspci unavailable (pciutils not installed)"; fi
   echo
   echo "=== STORAGE ==="
-  if have lsblk; then lsblk -e 7 -o NAME,PATH,TYPE,SIZE,MODEL,SERIAL,TRAN,RM,RO,FSTYPE,MOUNTPOINTS; fi
+  if have lsblk; then lsblk -e 7 -o NAME,PATH,TYPE,SIZE,MODEL,SERIAL,TRAN,RM,RO,FSTYPE,MOUNTPOINTS || true; fi
   echo
   echo "=== NETWORK ==="
-  if have ip; then ip -brief link; ip -brief address; fi
-  if have nmcli; then nmcli -t -f DEVICE,TYPE,STATE,CONNECTION device status; fi
+  if have ip; then ip -brief link || true; ip -brief address || true; fi
+  if have nmcli; then nmcli -t -f DEVICE,TYPE,STATE,CONNECTION device status || true; fi
   echo
   echo "=== USB ==="
-  if have lsusb; then lsusb; fi
+  if have lsusb; then lsusb || true; fi
   echo
   echo "=== NOTES ==="
   echo "READ-ONLY AUDIT: no partitions, filesystems, or settings were changed."

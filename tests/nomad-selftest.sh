@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
+trap 'echo "SELF-TEST FAILED at line $LINENO (command: $BASH_COMMAND)" >&2' ERR
 
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 TMP="$(mktemp -d)"

@@ -2,7 +2,7 @@
 param(
     [string]$Repository = "jeridj1/Auto-Setup",
     [string]$Directory = (Join-Path (Get-Location).Path "NOMAD-E93z-Installer"),
-    [switch]$IncludePrereleases = $true
+    [bool]$IncludePrereleases = $true
 )
 
 $ErrorActionPreference = "Stop"

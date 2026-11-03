@@ -23,6 +23,23 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v4
+      - name: Parse Windows downloader and reassembler scripts
+        shell: pwsh
+        run: |
+          $Files = @(
+            "$env:GITHUB_WORKSPACE/windows/download-nomad-release.ps1",
+            "$env:GITHUB_WORKSPACE/windows/reassemble-nomad-iso.ps1"
+          )
+          foreach ($File in $Files) {
+            $Tokens = $null
+            $ParseErrors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($File, [ref]$Tokens, [ref]$ParseErrors) | Out-Null
+            if ($ParseErrors.Count -gt 0) {
+              $ParseErrors | Format-List | Out-String | Write-Host
+              throw "PowerShell syntax validation failed: $File"
+            }
+          }
+          Write-Host "PowerShell scripts parsed successfully."
       - name: Test ISO segment joining and SHA-512 verification
         shell: pwsh
         run: |

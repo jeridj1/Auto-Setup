@@ -29,6 +29,10 @@ The current E93z installer is the first deployment tool, **not yet the complete 
 
 The installer does not silently choose between multiple disks. Do not connect additional internal-style storage devices during installation. External USB drives are excluded from target selection. The screen's 30-60 minute figure is only an estimate.
 
+## First boot: audit before installing
+
+The first boot must be an audit-only session. Do not choose the N.O.M.A.D. Automated install entry yet. Boot the ordinary Debian **Install** entry, open the installer shell with Ctrl+Alt+F2, and run `sh /cdrom/nomad/nomad-audit-installer.sh /tmp/NOMAD-E93z-audit.txt`. The report is printed and saved in temporary memory. Photograph it or copy it to a separate writable USB drive; do not save it to the internal disk. Return to the installer with Ctrl+Alt+F1 and power off. Review the report and confirm the internal drive before starting any installation. Full instructions: [INSTALL-ON-E93Z.md](INSTALL-ON-E93Z.md).
+
 ## Getting the installer
 
 The GitHub Actions workflow downloads Debian's official DVD-1 image, verifies Debian's signed SHA-512 checksum list, remasters the image with the N.O.M.A.D. boot entry and installer files, then publishes the finished ISO as a GitHub Release.
@@ -44,7 +48,7 @@ The script joins the numbered parts and verifies the finished ISO with SHA-512. 
 
 Use Rufus or another USB image-writing tool to write the completed ISO to a USB drive. Writing the image erases the selected USB drive. Use a known-good USB port on the E93z; avoid the damaged port. A 16 GB USB stick is sufficient for this installer image. Do not use a data drive unless it is intended to be completely erased.
 
-At boot, select **N.O.M.A.D. Automated install**. The standard Debian installer entries remain available, but they are not the N.O.M.A.D. workflow.
+After the audit has been reviewed and the internal target drive is confirmed, boot the USB again and select **N.O.M.A.D. Automated install**. Do not select it for the first audit-only session.
 
 ## Building locally (optional)
 

@@ -11,3 +11,5 @@ Build final E93z candidate including the sysfs PCI and USB audit fallback.
 Build final E93z candidate from the CI-green revision with resumable downloader and validated offline installer.
 
 Build latest test-green E93z media including checksum-failure cache recovery and resumable download integration.
+
+Build audit-first E93z ISO with POSIX installer-shell hardware survey and first-boot safety guide.

@@ -9,10 +9,16 @@ trap 'rm -rf "$TMP"' EXIT
 for script in "$ROOT"/linux/*.sh "$ROOT"/installer/*.sh "$ROOT"/tests/*.sh; do
   bash -n "$script"
 done
+sh -n "$ROOT/installer/nomad-audit-installer.sh"
 
 if ! bash -x "$ROOT/linux/nomad-audit.sh" "$TMP/audit" >"$TMP/audit.log" 2>&1; then cat "$TMP/audit.log"; exit 1; fi
 test -s "$TMP/audit/nomad-hardware-report.txt"
 grep -q "READ-ONLY AUDIT" "$TMP/audit/nomad-hardware-report.txt"
+
+# Exercise the POSIX-shell audit intended for Debian Installer, without disk writes.
+sh "$ROOT/installer/nomad-audit-installer.sh" "$TMP/installer-audit.txt" >"$TMP/installer-audit.log"
+grep -q "N.O.M.A.D. E93z PRE-INSTALL HARDWARE AUDIT" "$TMP/installer-audit.txt"
+grep -q "READ-ONLY AUDIT COMPLETE" "$TMP/installer-audit.txt"
 
 if command -v python3 >/dev/null 2>&1 && test -s "$TMP/audit/nomad-hardware-report.json"; then
   python3 - "$TMP/audit/nomad-hardware-report.json" <<'PY'
